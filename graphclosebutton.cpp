@@ -1,5 +1,6 @@
 #include "graphclosebutton.h"
 #include <qcursor.h>
+#include <qgraphicssceneevent.h>
 #include <qpainter.h>
 
 GraphCloseButton::GraphCloseButton(QGraphicsItem *parent)
@@ -9,6 +10,8 @@ GraphCloseButton::GraphCloseButton(QGraphicsItem *parent)
     this->setScale(2);
     this->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
 }
+
+GraphCloseButton::~GraphCloseButton() {}
 
 void GraphCloseButton::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -22,5 +25,7 @@ QRectF GraphCloseButton::boundingRect() const
 
 void GraphCloseButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    emit clicked();
+    if (event->button() == Qt::LeftButton){
+        emit clicked();
+    }
 }

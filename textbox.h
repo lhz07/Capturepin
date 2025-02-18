@@ -12,7 +12,7 @@ class TextBox : public QGraphicsTextItem
 public:
     explicit TextBox(QGraphicsItem* parent = nullptr);
     ~TextBox();
-    enum control_area {NONE, CLOSE, RESIZE, ROTATE, EDIT, MOVE};
+    enum control_area {NONE, RESIZE, ROTATE, EDIT, MOVE};
     void close_button_clicked();
 
 protected:
@@ -38,7 +38,6 @@ private:
     control_area current_control = NONE;
     void del_this();
     control_area detect_area(QPointF pos);
-    QRectF close_area();
     QRectF resize_area();
     QRectF edit_area();
     QRectF rotate_area();
@@ -59,7 +58,6 @@ private:
 
 signals:
     // void select_textbox(QPointer<TextBox> textbox);
-    void hovering_textbox(bool status);
     void update_font_size(double size);
     double get_font_size();
 };

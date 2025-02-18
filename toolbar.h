@@ -25,7 +25,6 @@ public:
     void screen_clicked(QMouseEvent* event);
     QToolBar* toolbar;
     QPointer<QToolBar> text_adjust;
-    void get_hovering(bool status);
     void update_font_size(double size);
     double get_font_size();
 
@@ -49,7 +48,6 @@ private:
     unsigned char current_tool;
     QGraphicsScene* scene;
     GraphView* view;
-    bool is_hovering = false;
     void edit_done();
     QShortcut* key_toggle_bar;
     QFontComboBox* text_font;

@@ -10,7 +10,6 @@ class GraphView : public QGraphicsView
 public:
     explicit GraphView(QGraphicsScene *scene, QWidget *parent = nullptr);
     void text_tool_visible(bool status);
-    void get_hovering(bool status);
 
 
 protected:
@@ -21,7 +20,6 @@ private:
     char current_tool;
     QList<TextBox*> textbox_list;
     void current_object(QObject* object);
-    bool is_hovering = false;
 
 signals:
     void mouse_clicked(QMouseEvent* event);

@@ -263,47 +263,38 @@ void ToolBar::get_selected_color(const QColor &color)
 
 void ToolBar::screen_clicked(QMouseEvent *event)
 {
-    if (!is_hovering){
-        // qDebug() << "not_hovering";
-        switch (current_tool) {
-        case TEXTTOOL:{
-            TextBox* text_box_1 = new TextBox();
-            // connect(text_box_1, &TextBox::select_textbox, this, &GraphView::current_object);
-            // text_box_1->setTextWidth(10);
-            // text_box_1->setPlainText("可调整大小和旋转的文本框");
-            // QFont font("Noto Sans Mono");
-            // font.setStyleHint(QFont::Monospace);
-            // font.setFamilies({"Noto Sans Mono", "Noto Color Emoji"});
-            QFont font = text_font->currentFont();
-            font.setPointSizeF(text_size->currentText().toDouble());
-            text_box_1->setFont(font);
-            if (selected_color.isValid()){
-                text_box_1->setDefaultTextColor(selected_color);
-            }
-            text_box_1->setPos(event->scenePosition());
-            qDebug() << event->scenePosition();
-            qDebug() << text_box_1->scenePos();
-            text_box_1->setScale(2);
-            text_box_1->setTransformOriginPoint(text_box_1->boundingRect().center());
-            // qDebug() << "add_text";
-            scene->addItem(text_box_1);
-            // qDebug() << text_box_1->isVisible();
-            // connect(text_box_1, &TextBox::select_textbox, this, &ToolBar::get_selected_textbox);
-            connect(text_box_1, &TextBox::update_font_size, this, &ToolBar::update_font_size);
-            connect(text_box_1, &TextBox::get_font_size, this, &ToolBar::get_font_size);
-            connect(text_box_1, &TextBox::hovering_textbox, this, &ToolBar::get_hovering);
-            connect(text_box_1, &TextBox::hovering_textbox, view, &GraphView::get_hovering);
-            scene->update();
-            break;}
-        default:
-            break;
+    // qDebug() << "not_hovering";
+    switch (current_tool) {
+    case TEXTTOOL:{
+        TextBox* text_box_1 = new TextBox();
+        // connect(text_box_1, &TextBox::select_textbox, this, &GraphView::current_object);
+        // text_box_1->setTextWidth(10);
+        // text_box_1->setPlainText("可调整大小和旋转的文本框");
+        // QFont font("Noto Sans Mono");
+        // font.setStyleHint(QFont::Monospace);
+        // font.setFamilies({"Noto Sans Mono", "Noto Color Emoji"});
+        QFont font = text_font->currentFont();
+        font.setPointSizeF(text_size->currentText().toDouble());
+        text_box_1->setFont(font);
+        if (selected_color.isValid()){
+            text_box_1->setDefaultTextColor(selected_color);
         }
+        text_box_1->setPos(event->scenePosition());
+        qDebug() << event->scenePosition();
+        qDebug() << text_box_1->scenePos();
+        text_box_1->setScale(2);
+        text_box_1->setTransformOriginPoint(text_box_1->boundingRect().center());
+        // qDebug() << "add_text";
+        scene->addItem(text_box_1);
+        // qDebug() << text_box_1->isVisible();
+        // connect(text_box_1, &TextBox::select_textbox, this, &ToolBar::get_selected_textbox);
+        connect(text_box_1, &TextBox::update_font_size, this, &ToolBar::update_font_size);
+        connect(text_box_1, &TextBox::get_font_size, this, &ToolBar::get_font_size);
+        scene->update();
+        break;}
+    default:
+        break;
     }
-}
-
-void ToolBar::get_hovering(bool status)
-{
-    this->is_hovering = status;
 }
 
 void ToolBar::update_font_size(double size)

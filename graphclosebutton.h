@@ -9,6 +9,7 @@ class GraphCloseButton : public QGraphicsObject
     Q_OBJECT
 public:
     explicit GraphCloseButton(QGraphicsItem *parent = nullptr);
+    ~GraphCloseButton();
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     QRectF boundingRect() const override;

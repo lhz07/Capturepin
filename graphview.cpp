@@ -27,9 +27,6 @@ void GraphView::mouseMoveEvent(QMouseEvent *event)
     //     qDebug() << "mouse is moving!";
     // }
     // qDebug() << "view mouse moved!";
-    if (!is_hovering && this->viewport()->cursor() != Qt::IBeamCursor){
-        // this->viewport()->setCursor(Qt::IBeamCursor);
-    }
     // this->viewport()->setCursor(Qt::CrossCursor);
     QGraphicsView::mouseMoveEvent(event);
 }
@@ -51,9 +48,4 @@ void GraphView::text_tool_visible(bool status)
         // new_text = false;
         this->hide();
     }
-}
-
-void GraphView::get_hovering(bool status)
-{
-    this->is_hovering = status;
 }

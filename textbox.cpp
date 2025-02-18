@@ -29,7 +29,7 @@ TextBox::~TextBox()
 
 void TextBox::close_button_clicked()
 {
-    qDebug() << "close button clicked!";
+    del_this();
 }
 
 void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
@@ -37,45 +37,33 @@ void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
     QGraphicsTextItem::hoverMoveEvent(event);
     current_control = detect_area(event->pos());
     switch (current_control) {
-    case CLOSE:
-        this->setCursor(Qt::PointingHandCursor);
-        this->scene()->views()[0]->viewport()->setCursor(Qt::PointingHandCursor);
-        emit hovering_textbox(true);
-        this->is_hovering = true;
-        this->scene()->update();
-        // qDebug() << "close area" << this->toPlainText();
-        break;
     case ROTATE:{
         this->scene()->views()[0]->viewport()->setCursor(rotate_cursor);
-        emit hovering_textbox(true);
         this->is_hovering = true;
         this->scene()->update();
-        qDebug() << "rotate area" << this->toPlainText();
+        // qDebug() << "rotate area" << this->toPlainText();
         break;
     }
     case RESIZE:
         this->setCursor(Qt::SizeFDiagCursor);
         this->scene()->views()[0]->viewport()->setCursor(Qt::SizeFDiagCursor);
-        emit hovering_textbox(true);
         this->is_hovering = true;
         this->scene()->update();
-        qDebug() << "resize area" << this->toPlainText();
+        // qDebug() << "resize area" << this->toPlainText();
         break;
     case MOVE:
         this->setCursor(Qt::SizeAllCursor);
         // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-        emit hovering_textbox(true);
         this->is_hovering = true;
         this->scene()->update();
-        qDebug() << "move area" << this->toPlainText();
+        // qDebug() << "move area" << this->toPlainText();
         break;
     case EDIT:
         this->setCursor(Qt::IBeamCursor);
         // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-        emit hovering_textbox(true);
         this->is_hovering = true;
         this->scene()->update();
-        qDebug() << "edit_area" << this->toPlainText();
+        // qDebug() << "edit_area" << this->toPlainText();
         break;
     case NONE:
         // if (this->is_hovering){
@@ -84,7 +72,7 @@ void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         //     emit hovering_textbox(false);
         //     this->is_hovering = false;
         //     this->scene()->update();
-        qDebug() << "other area" << this->toPlainText();
+        // qDebug() << "other area" << this->toPlainText();
         // }
         break;
     }
@@ -94,8 +82,7 @@ void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 
 void TextBox::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    emit hovering_textbox(true);
-    qDebug() << "hover enter" << this->toPlainText();
+    // qDebug() << "hover enter" << this->toPlainText();
     QGraphicsTextItem::hoverEnterEvent(event);
     // QTextCursor cursor;
     // this->setTextCursor(cursor);
@@ -105,7 +92,6 @@ void TextBox::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 void TextBox::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
     // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-    emit hovering_textbox(false);
     // qDebug() << "hover leave";
     QGraphicsTextItem::hoverLeaveEvent(event);
     // this->clearFocus(); // 鼠标离开时清除焦点，隐藏虚线框
@@ -158,14 +144,6 @@ void TextBox::del_this()
 {
     this->deleteLater();
     // this->setCursor(Qt::ArrowCursor);
-    this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-    emit hovering_textbox(false);
-}
-
-QRectF TextBox::close_area()
-{
-    QPointF top_right = this->boundingRect().topRight();
-    return QRectF(top_right.x() - 4, top_right.y() - 1, 5, 5);
 }
 
 QRectF TextBox::resize_area()
@@ -201,9 +179,7 @@ void TextBox::correct_center(QPointF center)
 
 TextBox::control_area TextBox::detect_area(QPointF pos)
 {
-    if (close_area().contains(pos)){
-        return CLOSE;
-    }else if (rotate_area().contains(pos)){
+    if (rotate_area().contains(pos)){
         return ROTATE;
     }else if(resize_area().contains(pos)){
         return RESIZE;
@@ -252,11 +228,7 @@ void TextBox::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     // this->setPos(event->pos());
     // event->ignore();
-    qDebug() << current_control;
     switch (current_control) {
-    case CLOSE:
-        del_this();
-        break;
     case ROTATE:
         correct_center(this->boundingRect().center());
         rotate_angle = this->rotation();
@@ -295,7 +267,6 @@ void TextBox::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     // this->update();
     // this->scene()->update();
-    qDebug() << "move" << current_control;
     switch (current_control) {
     case ROTATE:{
         rotate_new_pos = event->scenePos();
@@ -329,7 +300,6 @@ void TextBox::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
         break;
     }
     case NONE:
-    case CLOSE:
     case EDIT:
     case MOVE:
         QGraphicsTextItem::mouseMoveEvent(event);
