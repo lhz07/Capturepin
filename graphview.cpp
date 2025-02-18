@@ -2,15 +2,18 @@
 
 GraphView::GraphView(QGraphicsScene *scene, QWidget *parent)
     : QGraphicsView(scene, parent) {
-    this->setMouseTracking(true);
+    // this->setMouseTracking(true);
+    this->setCursor(Qt::IBeamCursor);
     // qDebug() << "graphview initialized!";
 }
 
 void GraphView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton){
-        emit mouse_clicked(event);
-        emit send_mouse_event(event);
+        QGraphicsItem* item = this->scene()->itemAt(event->pos(), this->transform());
+        if (!item){
+            emit mouse_clicked(event);
+        }
         // qDebug() << "graphview clicked!";
     }
     // this->setCursor(Qt::PointingHandCursor);
@@ -24,7 +27,6 @@ void GraphView::mouseMoveEvent(QMouseEvent *event)
     //     qDebug() << "mouse is moving!";
     // }
     // qDebug() << "view mouse moved!";
-    emit send_mouse_event(event);
     if (!is_hovering && this->viewport()->cursor() != Qt::IBeamCursor){
         // this->viewport()->setCursor(Qt::IBeamCursor);
     }
@@ -35,7 +37,6 @@ void GraphView::mouseMoveEvent(QMouseEvent *event)
 void GraphView::mouseReleaseEvent(QMouseEvent *event)
 {
     // qDebug() << "mouse button released";
-    emit send_mouse_event(event);
     // this->setCursor(Qt::IBeamCursor);
     QGraphicsView::mouseReleaseEvent(event);
 }

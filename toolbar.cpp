@@ -293,7 +293,6 @@ void ToolBar::screen_clicked(QMouseEvent *event)
             connect(text_box_1, &TextBox::get_font_size, this, &ToolBar::get_font_size);
             connect(text_box_1, &TextBox::hovering_textbox, this, &ToolBar::get_hovering);
             connect(text_box_1, &TextBox::hovering_textbox, view, &GraphView::get_hovering);
-            connect(view, &GraphView::send_mouse_event, text_box_1, &TextBox::handle_external_mouse_event);
             scene->update();
             break;}
         default:

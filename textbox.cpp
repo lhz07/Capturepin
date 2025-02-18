@@ -14,6 +14,8 @@ TextBox::TextBox(QGraphicsItem* parent)
     context_menu->addAction(del_textbox);
     connect(del_textbox, &QAction::triggered, this, &TextBox::del_this);
     rotate_cursor = QCursor(QPixmap(":/pic/resource/pic/rotate_cursor.svg").scaledToHeight(20, Qt::SmoothTransformation));
+    close_button = new GraphCloseButton(this);
+    connect(close_button, &GraphCloseButton::clicked, this, &TextBox::close_button_clicked);
     // this->setTransformOriginPoint(this->boundingRect().center());
     update();
 
@@ -25,191 +27,68 @@ TextBox::~TextBox()
     this->scene()->update();
 }
 
-void TextBox::handle_external_mouse_event(QMouseEvent *event)
+void TextBox::close_button_clicked()
 {
-
-    switch (event->type()) {
-    case QEvent::MouseButtonPress:
-        switch (current_control) {
-        case CLOSE:
-            del_this();
-            break;
-        case ROTATE:
-            correct_center(this->boundingRect().center());
-            rotate_angle = this->rotation();
-            rotate_start_pos = event->scenePosition();
-            is_adjusting = true;
-            this->update();
-            this->scene()->update();
-            break;
-        case RESIZE:
-            correct_center(this->boundingRect().topLeft());
-            resize_initial_rect = this->boundingRect();
-            resize_initial_text_size = this->font().pointSizeF();
-            // qDebug() << event->pos();
-            resize_start_pos = mapFromScene(event->scenePosition());
-            is_adjusting = true;
-            this->update();
-            this->scene()->update();
-            break;
-        case EDIT:
-            break;
-        case MOVE:
-            break;
-        case NONE:
-            this->is_selected = false;
-            break;
-            // this->setFocus();
-        }
-        break;
-    case QEvent::MouseMove:
-    {
-        // if (!ShareVar::is_selected){
-        // mouse press move
-        if (event->buttons() == Qt::LeftButton && is_adjusting){
-            switch (current_control) {
-            case ROTATE:{
-                rotate_new_pos = event->scenePosition();
-                QPointF center_pos = this->mapToScene(this->boundingRect().center());
-                QLineF line1(center_pos, rotate_start_pos);
-                QLineF line2(center_pos, rotate_new_pos);
-                double add_angle = line2.angleTo(line1);
-                this->setRotation(rotate_angle + add_angle);
-                rotate_angle  = this->rotation();
-                rotate_start_pos = rotate_new_pos;
-                break;
-            }
-            case RESIZE:{
-                resize_new_pos = mapFromScene(event->scenePosition());
-                // QRectF rect1(this->boundingRect().topLeft(), resize_start_pos);
-                // QRectF rect2(this->boundingRect().topLeft(), resize_new_pos);
-                // resize_start_pos = resize_new_pos;
-                // // QLineF line1(resize_initial_rect.topLeft(), resize_initial_rect.topRight());
-                // // QLineF line2(resize_initial_rect.topLeft(), QPointF(resize_new_pos.x(), resize_initial_rect.top()));
-                // // resize_start_pos = resize_new_pos;
-                // // double scale_rate = line2.length() / line1.length();
-                // double scale_rate = (rect2.height() * rect2.width()) / (rect1.height() * rect1.width());
-                // QFont font = this->font();
-                // font.setPointSizeF(font.pointSizeF() * scale_rate);
-                // this->setFont(font);
-                // qDebug() << scale_rate << font.pointSizeF();
-
-
-                QPointF delta = mapFromScene(event->scenePosition()) - resize_start_pos;
-                // resize_start_pos = resize_new_pos;
-                qreal newWidth = resize_initial_rect.width() + delta.x();
-                qreal newHeight = resize_initial_rect.height() + delta.y();
-
-                // 计算缩放比例
-                qreal scaleX = newWidth / resize_initial_rect.width();
-                qreal scaleY = newHeight / resize_initial_rect.height();
-                qreal scale = (scaleX + scaleY) / 2.0;
-                this->setScale(this->scale() * scale);
-                emit update_font_size(qRound(this->font().pointSizeF() * 10 * this->scale()) / 10.0);
-                // QFont newFont = this->font();
-                // newFont.setPointSizeF(qRound(resize_initial_text_size * scale * 10) / 10.0);
-                // this->setFont(newFont);
-                // qDebug() << scale << newFont.pointSizeF();
-                break;
-            }
-            case NONE:
-            case CLOSE:
-            case EDIT:
-            case MOVE:
-                break;
-            }
-            this->update();
-            this->scene()->update();
-        }
-        // mouse hover move
-        else if (event->buttons() == Qt::NoButton && this->is_selected){
-            QPointF local_pos = this->mapFromScene(event->scenePosition());
-            current_control = detect_area(local_pos);
-            switch (current_control) {
-            case CLOSE:
-                this->setCursor(Qt::PointingHandCursor);
-                this->scene()->views()[0]->viewport()->setCursor(Qt::PointingHandCursor);
-                emit hovering_textbox(true);
-                this->is_hovering = true;
-                this->scene()->update();
-                // qDebug() << "close area" << this->toPlainText();
-                break;
-            case ROTATE:{
-                this->scene()->views()[0]->viewport()->setCursor(rotate_cursor);
-                emit hovering_textbox(true);
-                this->is_hovering = true;
-                this->scene()->update();
-                qDebug() << "rotate area" << this->toPlainText();
-                break;
-            }
-            case RESIZE:
-                this->setCursor(Qt::SizeFDiagCursor);
-                this->scene()->views()[0]->viewport()->setCursor(Qt::SizeFDiagCursor);
-                emit hovering_textbox(true);
-                this->is_hovering = true;
-                this->scene()->update();
-                qDebug() << "resize area" << this->toPlainText();
-                break;
-            case MOVE:
-                this->setCursor(Qt::SizeAllCursor);
-                // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-                emit hovering_textbox(true);
-                this->is_hovering = true;
-                this->scene()->update();
-                qDebug() << "move area" << this->toPlainText();
-                break;
-            case EDIT:
-                this->setCursor(Qt::IBeamCursor);
-                // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-                emit hovering_textbox(true);
-                this->is_hovering = true;
-                this->scene()->update();
-                qDebug() << "edit_area" << this->toPlainText();
-                break;
-            case NONE:
-                if (this->is_hovering){
-                    this->setCursor(Qt::IBeamCursor);
-                    this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-                    emit hovering_textbox(false);
-                    this->is_hovering = false;
-                    this->scene()->update();
-                    qDebug() << "other area" << this->toPlainText();
-                }
-                break;
-            }
-        }else{
-            this->scene()->update();
-        }
-        // }
-        break;
-    }
-    case QEvent::MouseButtonRelease:
-        switch (current_control) {
-        case RESIZE:{
-            double size = emit get_font_size();
-            QFont new_font = this->font();
-            new_font.setPointSizeF(size / 2.0);
-            this->setFont(new_font);
-            this->setScale(2);
-            this->update();
-            this->scene()->update();
-            break;
-        }
-        default:
-            break;
-        }
-        // current_control = NONE;
-        is_adjusting = false;
-        break;
-    default:
-        break;
-    }
+    qDebug() << "close button clicked!";
 }
 
 void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
     QGraphicsTextItem::hoverMoveEvent(event);
-    emit hovering_textbox(true);
+    current_control = detect_area(event->pos());
+    switch (current_control) {
+    case CLOSE:
+        this->setCursor(Qt::PointingHandCursor);
+        this->scene()->views()[0]->viewport()->setCursor(Qt::PointingHandCursor);
+        emit hovering_textbox(true);
+        this->is_hovering = true;
+        this->scene()->update();
+        // qDebug() << "close area" << this->toPlainText();
+        break;
+    case ROTATE:{
+        this->scene()->views()[0]->viewport()->setCursor(rotate_cursor);
+        emit hovering_textbox(true);
+        this->is_hovering = true;
+        this->scene()->update();
+        qDebug() << "rotate area" << this->toPlainText();
+        break;
+    }
+    case RESIZE:
+        this->setCursor(Qt::SizeFDiagCursor);
+        this->scene()->views()[0]->viewport()->setCursor(Qt::SizeFDiagCursor);
+        emit hovering_textbox(true);
+        this->is_hovering = true;
+        this->scene()->update();
+        qDebug() << "resize area" << this->toPlainText();
+        break;
+    case MOVE:
+        this->setCursor(Qt::SizeAllCursor);
+        // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
+        emit hovering_textbox(true);
+        this->is_hovering = true;
+        this->scene()->update();
+        qDebug() << "move area" << this->toPlainText();
+        break;
+    case EDIT:
+        this->setCursor(Qt::IBeamCursor);
+        // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
+        emit hovering_textbox(true);
+        this->is_hovering = true;
+        this->scene()->update();
+        qDebug() << "edit_area" << this->toPlainText();
+        break;
+    case NONE:
+        // if (this->is_hovering){
+        //     this->setCursor(Qt::IBeamCursor);
+        //     this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
+        //     emit hovering_textbox(false);
+        //     this->is_hovering = false;
+        //     this->scene()->update();
+        qDebug() << "other area" << this->toPlainText();
+        // }
+        break;
+    }
+    // emit hovering_textbox(true);
     // qDebug() << "hover move" << this->toPlainText();
 }
 
@@ -286,13 +165,13 @@ void TextBox::del_this()
 QRectF TextBox::close_area()
 {
     QPointF top_right = this->boundingRect().topRight();
-    return QRectF(top_right.x() - 4, top_right.y() - 4, 5, 5);
+    return QRectF(top_right.x() - 4, top_right.y() - 1, 5, 5);
 }
 
 QRectF TextBox::resize_area()
 {
     QPointF bottom_right = this->boundingRect().bottomRight();
-    return QRectF(bottom_right.x() - 4, bottom_right.y() - 4, 8, 8);
+    return QRectF(bottom_right.x() - 4, bottom_right.y() - 4, 5, 5);
 }
 
 QRectF TextBox::edit_area()
@@ -354,8 +233,9 @@ void TextBox::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
 
     //close button
     // painter->setPen(Qt::black);
-    if (this->is_selected && current_control){
-        painter->drawImage(close_area(), QImage(":/pic/resource/pic/close.svg"));
+    if (current_control){
+        // painter->drawImage(close_area(), QImage(":/pic/resource/pic/close.svg"));
+        close_button->setPos(this->boundingRect().topRight());
         painter->drawImage(rotate_area(), QImage(":/pic/resource/pic/rotate.svg"));
         QPen pen;
         pen.setColor(Qt::black);
@@ -372,13 +252,37 @@ void TextBox::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
     // this->setPos(event->pos());
     // event->ignore();
-    if (!this->is_selected){
-        this->is_selected = true;
-        // ShareVar::is_selected = true;
-        this->current_control = EDIT;
-        qDebug() << "set selected";
+    qDebug() << current_control;
+    switch (current_control) {
+    case CLOSE:
+        del_this();
+        break;
+    case ROTATE:
+        correct_center(this->boundingRect().center());
+        rotate_angle = this->rotation();
+        rotate_start_pos = event->scenePos();
+        is_adjusting = true;
         this->update();
         this->scene()->update();
+        break;
+    case RESIZE:
+        correct_center(this->boundingRect().topLeft());
+        resize_initial_rect = this->boundingRect();
+        resize_initial_text_size = this->font().pointSizeF();
+        // qDebug() << event->pos();
+        resize_start_pos = event->pos();
+        is_adjusting = true;
+        this->update();
+        this->scene()->update();
+        break;
+    case EDIT:
+        break;
+    case MOVE:
+        break;
+    case NONE:
+        this->is_selected = false;
+        break;
+        // this->setFocus();
     }
     if (current_control != RESIZE){
         QGraphicsTextItem::mousePressEvent(event);
@@ -391,5 +295,65 @@ void TextBox::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     // this->update();
     // this->scene()->update();
-    QGraphicsTextItem::mouseMoveEvent(event);
+    qDebug() << "move" << current_control;
+    switch (current_control) {
+    case ROTATE:{
+        rotate_new_pos = event->scenePos();
+        QPointF center_pos = this->mapToScene(this->boundingRect().center());
+        QLineF line1(center_pos, rotate_start_pos);
+        QLineF line2(center_pos, rotate_new_pos);
+        double add_angle = line2.angleTo(line1);
+        this->setRotation(rotate_angle + add_angle);
+        rotate_angle  = this->rotation();
+        rotate_start_pos = rotate_new_pos;
+        break;
+    }
+    case RESIZE:{
+        resize_new_pos = event->pos();
+
+        QPointF delta = event->pos() - resize_start_pos;
+        // resize_start_pos = resize_new_pos;
+        qreal newWidth = resize_initial_rect.width() + delta.x();
+        qreal newHeight = resize_initial_rect.height() + delta.y();
+
+        // 计算缩放比例
+        qreal scaleX = newWidth / resize_initial_rect.width();
+        qreal scaleY = newHeight / resize_initial_rect.height();
+        qreal scale = (scaleX + scaleY) / 2.0;
+        this->setScale(this->scale() * scale);
+        emit update_font_size(qRound(this->font().pointSizeF() * 10 * this->scale()) / 10.0);
+        // QFont newFont = this->font();
+        // newFont.setPointSizeF(qRound(resize_initial_text_size * scale * 10) / 10.0);
+        // this->setFont(newFont);
+        // qDebug() << scale << newFont.pointSizeF();
+        break;
+    }
+    case NONE:
+    case CLOSE:
+    case EDIT:
+    case MOVE:
+        QGraphicsTextItem::mouseMoveEvent(event);
+        break;
+    }
+    this->update();
+    this->scene()->update();
+}
+
+void TextBox::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    switch (current_control) {
+    case RESIZE:{
+        // double size = emit get_font_size();
+        // QFont new_font = this->font();
+        // new_font.setPointSizeF(size / 2.0);
+        // this->setFont(new_font);
+        // this->setScale(2);
+        this->update();
+        this->scene()->update();
+        break;
+    }
+    default:
+        break;
+    }
+    QGraphicsTextItem::mouseReleaseEvent(event);
 }

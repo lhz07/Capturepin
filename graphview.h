@@ -25,7 +25,6 @@ private:
 
 signals:
     void mouse_clicked(QMouseEvent* event);
-    void send_mouse_event(QMouseEvent* event);
 };
 
 #endif // GRAPHVIEW_H

@@ -39,6 +39,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         sharevar.h sharevar.cpp
         graphview.h graphview.cpp
         colorgridwidget.h colorgridwidget.cpp
+        graphclosebutton.h graphclosebutton.cpp
 
 
 

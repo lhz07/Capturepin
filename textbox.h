@@ -4,6 +4,7 @@
 #include <QObject>
 #include <qgraphicsitem.h>
 #include <QtWidgets>
+#include "graphclosebutton.h"
 
 class TextBox : public QGraphicsTextItem
 {
@@ -11,13 +12,14 @@ class TextBox : public QGraphicsTextItem
 public:
     explicit TextBox(QGraphicsItem* parent = nullptr);
     ~TextBox();
-    void handle_external_mouse_event(QMouseEvent* event);
     enum control_area {NONE, CLOSE, RESIZE, ROTATE, EDIT, MOVE};
+    void close_button_clicked();
 
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
@@ -27,6 +29,7 @@ protected:
 private:
 
     QVector<QPointF> handles;
+    GraphCloseButton* close_button;
     QTextCursor old_cursor;
     int up = 0;
     int down = 0;
