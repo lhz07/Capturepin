@@ -1,7 +1,8 @@
 #ifndef START_SHOT_H
 #define START_SHOT_H
 
-#include <QMainWindow>
+// #include <QMainWindow>
+#include <QOpenGLWidget>
 #include <QtWidgets>
 #include "pin.h"
 
@@ -9,7 +10,7 @@ namespace Ui {
 class Start_shot;
 }
 
-class Start_shot : public QMainWindow
+class Start_shot : public QOpenGLWidget
 {
     Q_OBJECT
 

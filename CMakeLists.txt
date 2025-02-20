@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # set(CMAKE_INSTALL_RPATH "/opt/capturepin/lib")
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS DBus Network)
+find_package(Qt6 REQUIRED COMPONENTS DBus Network Svg OpenGLWidgets)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -40,6 +40,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         graphview.h graphview.cpp
         colorgridwidget.h colorgridwidget.cpp
         graphclosebutton.h graphclosebutton.cpp
+        graphresizebutton.h graphresizebutton.cpp
+        graphrotatebutton.h graphrotatebutton.cpp
 
 
 
@@ -65,7 +67,7 @@ else()
     endif()
 endif()
 
-target_link_libraries(capturepin PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::DBus Qt6::Network)
+target_link_libraries(capturepin PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::DBus Qt6::Network Qt6::Svg Qt6::OpenGLWidgets)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

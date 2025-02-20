@@ -10,7 +10,7 @@
 int Start_shot::pin_count = 0;
 
 Start_shot::Start_shot(QWidget *parent)
-    : QMainWindow(parent)
+    : QOpenGLWidget(parent)
 // , ui(new Ui::Start_shot)
 {
     // ui->setupUi(this);
@@ -26,6 +26,12 @@ Start_shot::Start_shot(QWidget *parent)
     connect(copy_pic, &QShortcut::activated, this, &Start_shot::copy);
     connect(pin_pic, &QShortcut::activated, this, &Start_shot::pin_picture);
     connect(cancel, &QShortcut::activated, this, &QWidget::close);
+    // a test of grim
+    // QProcess process;
+    // qDebug() << "grim shot start" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    // process.start("grim", QStringList() << "-o" << "DP-1" << "test.png");
+    // process.waitForFinished();
+    // qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
     Screenshot sc1;
     sc1.newShot(res);
     this->showFullScreen();
@@ -52,6 +58,7 @@ Start_shot::Start_shot(QWidget *parent)
     // label_pic->setPixmap(*res);
     this->setCursor(Qt::CrossCursor);
     this->setMouseTracking(true);
+    qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
 }
 
 Start_shot::~Start_shot()

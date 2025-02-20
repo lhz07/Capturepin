@@ -12,6 +12,8 @@ ToolBar::ToolBar(QGraphicsScene *scene, QString window_title, QWidget *parent)
     this->scene = scene;
     this->view = static_cast<GraphView*>(scene->views()[0]);
     this->window_title = window_title;
+    socket = new QLocalSocket();
+    connect(socket, &QLocalSocket::readyRead, this, &ToolBar::receive_socket);
     toolbar_socket = new HyprSocket(this);
     addText = new QAction("T");
     complete = new QAction("done");
@@ -150,64 +152,68 @@ void ToolBar::change_text_font(const QFont &font)
     }
 }
 
-bool ToolBar::event(QEvent* event)
+void ToolBar::window_shown()
 {
-    const bool ret_val = QWidget::event(event);
     if (to_show_bar){
-        paint_count++;
-        if (event->type() == QEvent::WindowActivate){
-            // QProcess process;
-            QString pos;
-            QString output;
-            const auto gotSignal = [&output](QString response) {
-                output = response;
-            };
-            QMetaObject::Connection conn = QObject::connect(toolbar_socket,
-                                                            &HyprSocket::hypr_response, gotSignal);
-            toolbar_socket->sendCommand("clients");
-            // process.start("bash", QStringList() << "-c" << "hyprctl clients");
-            // process.waitForFinished();
-            // QString output = process.readAll();
-            // 简单解析窗口 ID
-            QObject::disconnect(conn);
-            QStringList lines = output.split("\n");
-            // QString window_seq = "1";
-            for (int i = 0; i < lines.size(); ++i) {
-                if (lines[i].contains(QString("title: ") + "capturepinTool." + window_title.split(".")[1])){
-                    // qDebug() << "show";
-                    for (int i = 0; i < lines.size(); ++i) {
-                        if (lines[i].contains("title: " + window_title)) {
-                            for (int j = i-1; j >= 0; --j) {
-                                if (lines[j].contains("at: ")) {
-                                    pos = lines[j].split(": ").last().trimmed();
-                                    // qDebug() << pos;
-                                    break;
-                                }
+        QString pos;
+        QString output;
+        QProcess process;
+        // find this window
+        process.start("bash", QStringList() << "-c" << "hyprctl clients");
+        process.waitForFinished();
+        output = process.readAll();
+        // const auto gotSignal = [&output](QString response) {
+        //     output = response;
+        // };
+        // QMetaObject::Connection conn = QObject::connect(toolbar_socket,
+        //                                                 &HyprSocket::hypr_response, gotSignal);
+        // toolbar_socket->sendCommand("clients");
+        //
+        // QObject::disconnect(conn);
+        QStringList lines = output.split("\n");
+        for (int i = 0; i < lines.size(); ++i) {
+            if (lines[i].endsWith(QString("title: ") + this->windowTitle())){
+                // qDebug() << "show";
+                for (int i = 0; i < lines.size(); ++i) {
+                    // find the pin window position
+                    if (lines[i].endsWith("title: " + window_title)) {
+                        for (int j = i-1; j >= 0; --j) {
+                            if (lines[j].contains("at: ")) {
+                                pos = lines[j].split(": ").last().trimmed();
+                                // qDebug() << pos;
+                                break;
                             }
-                            break;
                         }
+                        break;
                     }
-                    pos = pos.split(",")[0] + " " + QString::number(pos.split(",")[1].toInt() - 75);
-                    QString temp_cmd = pos.replace(',', ' ') +  ",title:";
-                    // process.start("bash", QStringList() << "-c" << "hyprctl dispatch movewindowpixel exact " + temp_cmd + "capturepinTool." + window_title.split(".")[1]);
-                    // process.waitForFinished();
-                    toolbar_socket->sendCommand("dispatch movewindowpixel exact " +
-                                                temp_cmd + "capturepinTool." +
-                                                window_title.split(".")[1]);
-                    if (reshow_bar){
-                        toolbar_socket->sendCommand("dispatch focuswindow title:" + window_title);
-                        reshow_bar = false;
-                    }
-                    toolbar_socket->sendCommand(QString("dispatch setprop title:") + "capturepinTool." +
-                                                window_title.split(".")[1] + " norounding 1");
-                    to_show_bar = false;
-                    paint_count = 0;
                 }
+                pos = pos.split(",")[0] + " " + QString::number(pos.split(",")[1].toInt() - 75);
+                QString temp_cmd = pos.replace(',', ' ') +  ",title:";
+                process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch movewindowpixel exact " + temp_cmd + this->windowTitle());
+                process.startDetached("bash", QStringList() << "-c" << QString("hyprctl dispatch setprop title:") + this->windowTitle() + " norounding 1");
+                // toolbar_socket->sendCommand("dispatch movewindowpixel exact " +
+                //                             temp_cmd + this->windowTitle());
+                if (reshow_bar){
+                    // toolbar_socket->sendCommand("dispatch focuswindow title:" + window_title);
+                    reshow_bar = false;
+                }
+                // toolbar_socket->sendCommand(QString("dispatch setprop title:") + this->windowTitle() + " norounding 1");
+                to_show_bar = false;
             }
-
         }
     }
-    return ret_val;
+}
+
+void ToolBar::receive_socket()
+{
+    QString event = socket->readAll();
+    QStringList events = event.split('\n');
+    foreach (QString i, events) {
+        if (i.contains("openwindow") && i.endsWith(this->windowTitle())){
+            socket->disconnectFromServer();
+            window_shown();
+        }
+    }
 }
 
 void ToolBar::closeEvent(QCloseEvent *event)
@@ -229,7 +235,7 @@ void ToolBar::restore_toolbar()
 
 void ToolBar::get_focus_item(QGraphicsItem *newFocusItem, QGraphicsItem *oldFocusItem, Qt::FocusReason reason)
 {
-    if (!text_adjust.isNull() && newFocusItem != nullptr){
+    if (!text_adjust.isNull() && newFocusItem){
         switch (newFocusItem->type()) {
         case TextBox::Type:
         {
@@ -240,6 +246,13 @@ void ToolBar::get_focus_item(QGraphicsItem *newFocusItem, QGraphicsItem *oldFocu
         }
         default:
             break;
+        }
+    }
+    // set item stack order
+    if (newFocusItem){
+        newFocusItem->setZValue(1);
+        if (oldFocusItem){
+            oldFocusItem->setZValue(0);
         }
     }
 }
@@ -291,7 +304,8 @@ void ToolBar::screen_clicked(QMouseEvent *event)
         connect(text_box_1, &TextBox::update_font_size, this, &ToolBar::update_font_size);
         connect(text_box_1, &TextBox::get_font_size, this, &ToolBar::get_font_size);
         scene->update();
-        break;}
+        break;
+    }
     default:
         break;
     }
@@ -305,4 +319,12 @@ void ToolBar::update_font_size(double size)
 double ToolBar::get_font_size()
 {
     return this->text_size->currentText().toDouble();
+}
+
+void ToolBar::showEvent(QShowEvent *event)
+{
+    QString runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
+    QString socketPath = QString("%1/hypr/%2/.socket2.sock")
+                             .arg(runtimeDir, qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE"));
+    socket->connectToServer(socketPath);
 }

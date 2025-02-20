@@ -53,6 +53,7 @@ void Screenshot::newShot(QPixmap *&res)
     QEventLoop loop;
     const auto gotSignal = [&res, &loop](uint status, const QVariantMap& map) {
         if (status == 0) {
+            qDebug() << "get pic" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
             // Parse this as URI to handle unicode properly
             QUrl uri = map.value("uri").toString();
             QString uriString = uri.toLocalFile();
@@ -68,7 +69,7 @@ void Screenshot::newShot(QPixmap *&res)
     // prevent racy situations and listen before calling screenshot
     QMetaObject::Connection conn = QObject::connect(
         request, &org::freedesktop::portal::Request::Response, gotSignal);
-
+    qDebug() << "request pic" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
     screenshotInterface.call(
         QStringLiteral("Screenshot"),
         "",

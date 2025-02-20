@@ -3,7 +3,8 @@
 
 #include "graphview.h"
 #include "hyprsocket.h"
-#include "textbox.h"
+// #include "textbox.h"
+#include <QLocalSocket>
 #include <QWidget>
 #include <QtWidgets>
 
@@ -29,7 +30,8 @@ public:
     double get_font_size();
 
 protected:
-    bool event(QEvent *event) override;
+    // bool event(QEvent *event) override;
+    void showEvent(QShowEvent* event) override;
     void closeEvent(QCloseEvent* event) override;
 
 private:
@@ -37,7 +39,6 @@ private:
     QAction* addText;
     QAction* complete;
     QAction* text_color;
-    int paint_count = 0;
     bool to_show_bar = false;
     void addText_button_clicked();
     QSettings myset = QSettings("CapturePin", "Config");
@@ -53,11 +54,14 @@ private:
     QFontComboBox* text_font;
     QComboBox* text_size;
     HyprSocket* toolbar_socket;
+    QLocalSocket* socket;
     bool reshow_bar = false;
 
     void change_text_size(const QString& size);
     void change_text_font(const QFont& font);
-
+    void window_shown();
+private slots:
+    void receive_socket();
 
 signals:
     void view_visible(bool status);

@@ -1,1 +1,12 @@
-<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg t="1739184927252" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="24832" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"><path d="M512 1024A512 512 0 1 1 512 0a512 512 0 0 1 0 1024zM512 341.333333a113.777778 113.777778 0 1 0 0-227.555555 113.777778 113.777778 0 0 0 0 227.555555z" fill="#2a8dee" p-id="24833"></path></svg>
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" p-id="24832" version="1.1" class="icon" t="1739184927252">
+
+ <g>
+  <title>background</title>
+  <rect fill="none" id="canvas_background" height="1062" width="2130" y="-1" x="-1"/>
+ </g>
+ <g>
+  <title>Layer 1</title>
+  <rect id="svg_2" height="301.999995" width="299.999996" y="71.312498" x="361.999995" fill-opacity="1" stroke-opacity="null" stroke-width="1.5" stroke="#000" fill="#fff"/>
+  <path id="svg_1" p-id="24833" fill="#2a8dee" d="m512,1024a512,512 0 1 1 0,-1024a512,512 0 0 1 0,1024zm0,-682.666667a113.777778,113.777778 0 1 0 0,-227.555555a113.777778,113.777778 0 0 0 0,227.555555z"/>
+ </g>
+</svg>

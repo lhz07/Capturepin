@@ -187,9 +187,9 @@ void Pin::receive_socket()
     QString event = socket->readAll();
     QStringList events = event.split('\n');
     foreach (QString i, events) {
-        if (i.contains("openwindow") && i.contains(window_title)){
+        if (i.contains("openwindow") && i.endsWith(window_title)){
             socket->disconnectFromServer();
-            // qDebug() << i;
+            qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz") << this->windowTitle() << "get show window!";
             window_shown();
         }
     }
@@ -205,7 +205,6 @@ void Pin::window_shown()
             view->setFixedSize(this->size());
             scene->setSceneRect(0, 0, view->width(), view->height());
             // QProcess process;
-            window_title = this->windowTitle(); // Very Important
             QString left_top = QString::number(p_start.x()) + " " + QString::number(p_start.y()) + "," + "title:";
             // QStringList list1;
             // list1 << "-c" << "hyprctl dispatch movewindowpixel exact " + left_top + window_title;
@@ -231,9 +230,13 @@ void Pin::window_shown()
         // qDebug() << list1;
         // process.start("bash", list1);
         // process.waitForFinished();
-        pin_socket->sendCommand("dispatch movewindowpixel exact " + temp_cmd + window_title);
-        pin_socket->sendCommand("dispatch setprop title:" + window_title + " norounding 1");
-        pin_socket->sendCommand("dispatch setprop title:" + window_title + " noanim 1");
+        QProcess process;
+        process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch movewindowpixel exact " + temp_cmd + window_title);
+        process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch setprop title:" + window_title + " norounding 1");
+        process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch setprop title:" + window_title + " noanim 1");
+        // pin_socket->sendCommand("dispatch movewindowpixel exact " + temp_cmd + window_title);
+        // pin_socket->sendCommand("dispatch setprop title:" + window_title + " norounding 1");
+        // pin_socket->sendCommand("dispatch setprop title:" + window_title + " noanim 1");
         // HyprSocket::getInstance()->sendCommand("dispatch movewindowpixel exact " + temp_cmd + window_title);
         // HyprSocket::getInstance()->sendCommand("dispatch setprop title:" + window_title + " norounding 1");
         // HyprSocket::getInstance()->sendCommand("dispatch setprop title:" + window_title + " noanim 1");
@@ -279,7 +282,7 @@ void Pin::mousePressEvent(QMouseEvent *event)
             temp_socket->sendCommand("clients");
             QStringList lines = output.split("\n");
             for (int i = 0; i < lines.size(); ++i) {
-                if (lines[i].contains("title: " + window_title)) {
+                if (lines[i].endsWith("title: " + window_title)) {
                     for (int j = i-1; j >= 0; --j) {
                         if (lines[j].contains("at: ")) {
                             pos = lines[j].split(": ").last().trimmed();
@@ -626,6 +629,7 @@ void Pin::showEvent(QShowEvent *event)
 {
     // qDebug() << "about_showing";
     // qDebug() << event->type();
+    window_title = this->windowTitle(); // Very Important
     QString runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
     QString socketPath = QString("%1/hypr/%2/.socket2.sock")
                              .arg(runtimeDir, qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE"));
@@ -651,7 +655,7 @@ void Pin::hide_all()
     // qDebug() << output;
     QStringList lines = output.split("\n");
     for (int i = 0; i < lines.size(); ++i) {
-        if (lines[i].contains("title: " + window_title)) {
+        if (lines[i].endsWith("title: " + window_title)) {
             for (int j = i-1; j >= 0; --j) {
                 if (lines[j].contains("at: ")) {
                     pos = lines[j].split(": ").last().trimmed();

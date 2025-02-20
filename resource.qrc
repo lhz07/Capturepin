@@ -6,5 +6,6 @@
         <file>resource/pic/resize.svg</file>
         <file>resource/pic/rotate.svg</file>
         <file>resource/pic/rotate_cursor.svg</file>
+        <file>resource/pic/rotate_cursor.png</file>
     </qresource>
 </RCC>

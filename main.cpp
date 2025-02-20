@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     QLoggingCategory::setFilterRules(QStringLiteral("qt.qpa.wayland.textinput=false"));
     // QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QString cmd;
+    // qDebug() << "main function" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
     if (argc >= 2)
     {
         // qDebug() << argv[1];

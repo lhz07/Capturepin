@@ -2,9 +2,12 @@
 #define TEXTBOX_H
 
 #include <QObject>
+#include <qaction.h>
 #include <qgraphicsitem.h>
-#include <QtWidgets>
+// #include <QtWidgets>
 #include "graphclosebutton.h"
+#include "graphresizebutton.h"
+#include "graphrotatebutton.h"
 
 class TextBox : public QGraphicsTextItem
 {
@@ -14,6 +17,9 @@ public:
     ~TextBox();
     enum control_area {NONE, RESIZE, ROTATE, EDIT, MOVE};
     void close_button_clicked();
+    void resize_button_press(QGraphicsSceneMouseEvent *event);
+    void resize_button_move(QGraphicsSceneMouseEvent *event);
+    // void resize_button_release(QGraphicsSceneMouseEvent *event);
 
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
@@ -30,7 +36,8 @@ private:
 
     QVector<QPointF> handles;
     GraphCloseButton* close_button;
-    QTextCursor old_cursor;
+    GraphResizeButton* resize_button;
+    GraphRotateButton* rotate_button;
     int up = 0;
     int down = 0;
     QMenu* context_menu;
@@ -38,20 +45,16 @@ private:
     control_area current_control = NONE;
     void del_this();
     control_area detect_area(QPointF pos);
-    QRectF resize_area();
     QRectF edit_area();
     QRectF rotate_area();
-    QCursor rotate_cursor;
     QPointF rotate_start_pos;
     QPointF rotate_new_pos;
     double rotate_angle;
     QPointF resize_start_pos;
     QPointF resize_new_pos;
-    QRectF resize_initial_rect;
     double resize_initial_text_size;
 
     bool is_hovering = false;
-    bool is_adjusting = false;
     bool is_selected = false;
 
     void correct_center(QPointF center);
