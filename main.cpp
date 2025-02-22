@@ -62,6 +62,8 @@ int main(int argc, char *argv[])
         sharedMemory->unlock();
         qDebug() << "create sharedMemory";
     }
+    // QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+    // qDebug() << QCoreApplication::testAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication a(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
     MainWindow w(sharedMemory);

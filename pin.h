@@ -8,9 +8,9 @@
 #include <QtWidgets>
 #include <QLocalSocket>
 
-namespace Ui {
-class Pin;
-}
+// namespace Ui {
+// class Pin;
+// }
 
 class Pin : public QWidget
 {
@@ -36,7 +36,7 @@ protected:
     void showEvent(QShowEvent* event) override;
     // void paintEvent(QPaintEvent *event) override;
 private:
-    Ui::Pin *ui;
+    // Ui::Pin *ui;
     bool m_dragging = false;             // 标记是否正在拖动
     QPoint m_dragPosition;       // 鼠标拖动起始位置
     QVBoxLayout* mainLayout;

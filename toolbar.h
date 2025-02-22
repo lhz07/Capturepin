@@ -8,9 +8,9 @@
 #include <QWidget>
 #include <QtWidgets>
 
-namespace Ui {
-class ToolBar;
-}
+// namespace Ui {
+// class ToolBar;
+// }
 
 class ToolBar : public QWidget
 {
@@ -35,7 +35,7 @@ protected:
     void closeEvent(QCloseEvent* event) override;
 
 private:
-    Ui::ToolBar *ui;
+    // Ui::ToolBar *ui;
     QAction* addText;
     QAction* complete;
     QAction* text_color;

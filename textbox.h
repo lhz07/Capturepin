@@ -15,23 +15,26 @@ class TextBox : public QGraphicsTextItem
 public:
     explicit TextBox(QGraphicsItem* parent = nullptr);
     ~TextBox();
-    enum control_area {NONE, RESIZE, ROTATE, EDIT, MOVE};
+    enum control_area {NONE, EDIT, MOVE};
     void close_button_clicked();
-    void resize_button_press(QGraphicsSceneMouseEvent *event);
-    void resize_button_move(QGraphicsSceneMouseEvent *event);
+    void resize_button_press(QGraphicsSceneMouseEvent* event);
+    void resize_button_move(QGraphicsSceneMouseEvent* event);
+    void rotate_button_press(QGraphicsSceneMouseEvent* event);
+    void rotate_button_move(QGraphicsSceneMouseEvent* event);
     // void resize_button_release(QGraphicsSceneMouseEvent *event);
 
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    // void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
-    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    // void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
     void wheelEvent(QGraphicsSceneWheelEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 private:
 
     QVector<QPointF> handles;
@@ -46,7 +49,6 @@ private:
     void del_this();
     control_area detect_area(QPointF pos);
     QRectF edit_area();
-    QRectF rotate_area();
     QPointF rotate_start_pos;
     QPointF rotate_new_pos;
     double rotate_angle;
@@ -55,7 +57,7 @@ private:
     double resize_initial_text_size;
 
     bool is_hovering = false;
-    bool is_selected = false;
+    bool grade_rotation = false;
 
     void correct_center(QPointF center);
 

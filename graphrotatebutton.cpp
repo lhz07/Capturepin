@@ -35,10 +35,10 @@ QRectF GraphRotateButton::boundingRect() const
 
 void GraphRotateButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-
+    emit mouse_press(event);
 }
 
 void GraphRotateButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-
+    emit mouse_move(event);
 }

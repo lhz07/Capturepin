@@ -185,8 +185,8 @@ void Pin::quick_save()
 void Pin::receive_socket()
 {
     QString event = socket->readAll();
-    QStringList events = event.split('\n');
-    foreach (QString i, events) {
+    const QStringList events = event.split('\n');
+    for (const QString &i : events) {
         if (i.contains("openwindow") && i.endsWith(window_title)){
             socket->disconnectFromServer();
             qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz") << this->windowTitle() << "get show window!";
@@ -253,13 +253,36 @@ void Pin::window_shown()
 void Pin::save_pic()
 {
     QString name = QString("Capturepin_%1").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"));
-    QString file_path = QFileDialog::getSaveFileName(this, "Save Picture", QDir::homePath()+'/'+name, "PNG Files (*.png)");
-    if (file_path != ""){
-        if (!file_path.endsWith(".png")) {
-            file_path += ".png";
+    QFileDialog dialog(this, "Save Picture", QDir::homePath()+'/'+name, "PNG Files (*.png);;JPEG Files (*.jpeg)");
+    QString file_path;
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    // 执行文件对话框
+    if (dialog.exec() == QDialog::Accepted) {
+        // 获取用户选择的文件路径
+        QStringList selectedFiles = dialog.selectedFiles();
+        if (!selectedFiles.empty()){
+            file_path = selectedFiles[0];
         }
-        pic.save(file_path, "png");
+        // 获取用户选择的文件类型过滤器
+        QString selectedFilter = dialog.selectedNameFilter();
+        // qDebug() << file_path << selectedFilter;
+        if (file_path != ""){
+            if (selectedFilter == "PNG Files (*.png)"){
+                if (!file_path.endsWith(".png")) {
+                    file_path += ".png";
+                }
+                pic.save(file_path, "png");
+            }
+            else if (selectedFilter == "JPEG Files (*.jpeg)"){
+                if (!file_path.endsWith(".jpeg")) {
+                    file_path += ".jpeg";
+                }
+                pic.save(file_path, "jpeg", 100);
+            }
+        }
     }
+    // QString file_path = QFileDialog::getSaveFileName(this, "Save Picture", QDir::homePath()+'/'+name, "PNG Files (*.png);;JPEG Files (*.jpeg)");
+
 }
 
 

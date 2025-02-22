@@ -7,7 +7,7 @@ class ReactCmd : public QThread
 public:
     ReactCmd();
 protected:
-    void run();
+    void run() override;
 signals:
     void memoryChanged();
 };

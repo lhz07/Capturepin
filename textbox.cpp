@@ -1,4 +1,5 @@
 #include "textbox.h"
+#include <qevent.h>
 #include <qgraphicsscene.h>
 #include <qgraphicssceneevent.h>
 #include <qgraphicsview.h>
@@ -29,8 +30,8 @@ TextBox::TextBox(QGraphicsItem* parent)
     rotate_button = new GraphRotateButton(this);
     rotate_button->setVisible(false);
     rotate_button->setZValue(2);
-
-    // this->setRotation(45);
+    connect(rotate_button, &GraphRotateButton::mouse_press, this, &TextBox::rotate_button_press);
+    connect(rotate_button, &GraphRotateButton::mouse_move, this, &TextBox::rotate_button_move);
     // this->setTransformOriginPoint(this->boundingRect().center());
 }
 
@@ -53,8 +54,8 @@ void TextBox::resize_button_press(QGraphicsSceneMouseEvent *event)
     // resize_start_pos = this->mapFromItem(resize_button, event->pos());
     resize_start_pos = this->mapFromScene(event->scenePos());
     qDebug() << resize_start_pos;
-    this->update();
-    this->scene()->update();
+    // this->update();
+    // this->scene()->update();
 }
 
 void TextBox::resize_button_move(QGraphicsSceneMouseEvent *event)
@@ -90,36 +91,83 @@ void TextBox::resize_button_move(QGraphicsSceneMouseEvent *event)
     this->scene()->update();
 }
 
+void TextBox::rotate_button_press(QGraphicsSceneMouseEvent *event)
+{
+    this->setFocus();
+    correct_center(this->boundingRect().center());
+    rotate_angle = this->rotation();
+    rotate_start_pos = event->scenePos();
+    // this->update();
+    // this->scene()->update();
+}
+
+void TextBox::rotate_button_move(QGraphicsSceneMouseEvent *event)
+{
+    rotate_new_pos = event->scenePos();
+    QPointF center_pos = this->mapToScene(this->boundingRect().center());
+    QLineF line1(center_pos, rotate_start_pos);
+    QLineF line2(center_pos, rotate_new_pos);
+    double add_angle = line2.angleTo(line1);
+    double new_angle = rotate_angle + add_angle;
+    int grade_angle = 0;
+    if (new_angle > 360){
+        new_angle = new_angle - 360;
+    }
+    // qDebug() << new_angle;
+    if (new_angle < 22.5 || new_angle >= 337.5){
+        resize_button->setCursor(Qt::SizeFDiagCursor);
+        grade_angle = 0;
+    }else if (new_angle < 67.5){
+        resize_button->setCursor(Qt::SizeVerCursor);
+        grade_angle = 45;
+    }else if (new_angle < 112.5){
+        resize_button->setCursor(Qt::SizeBDiagCursor);
+        grade_angle = 90;
+    }else if (new_angle < 157.5){
+        resize_button->setCursor(Qt::SizeHorCursor);
+        grade_angle = 135;
+    }else if (new_angle < 202.5){
+        resize_button->setCursor(Qt::SizeFDiagCursor);
+        grade_angle = 180;
+    }else if (new_angle < 247.5){
+        resize_button->setCursor(Qt::SizeVerCursor);
+        grade_angle = 225;
+    }else if (new_angle < 292.5){
+        resize_button->setCursor(Qt::SizeBDiagCursor);
+        grade_angle = 270;
+    }else if (new_angle < 337.5){
+        resize_button->setCursor(Qt::SizeHorCursor);
+        grade_angle = 315;
+    }
+    if (grade_rotation){
+        this->setRotation(grade_angle);
+    }else{
+        this->setRotation(new_angle);
+    }
+    // no need to update them here, just compare the new pos with the original pos
+    // rotate_angle  = this->rotation();
+    // rotate_start_pos = rotate_new_pos;
+    this->update();
+    this->scene()->update();
+
+}
+
 void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
     QGraphicsTextItem::hoverMoveEvent(event);
     current_control = detect_area(event->pos());
     switch (current_control) {
-    case ROTATE:{
-        // this->scene()->views()[0]->viewport()->setCursor(rotate_cursor);
-        this->is_hovering = true;
-        this->scene()->update();
-        // qDebug() << "rotate area" << this->toPlainText();
-        break;
-    }
-    case RESIZE:
-        // this->setCursor(Qt::SizeFDiagCursor);
-        // this->scene()->views()[0]->viewport()->setCursor(Qt::SizeFDiagCursor);
-        // this->is_hovering = true;
-        // this->scene()->update();
-        // qDebug() << "resize area" << this->toPlainText();
-        break;
     case MOVE:
         this->setCursor(Qt::SizeAllCursor);
         // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-        this->is_hovering = true;
+        // this->is_hovering = true;
         this->scene()->update();
         // qDebug() << "move area" << this->toPlainText();
         break;
     case EDIT:
         this->setCursor(Qt::IBeamCursor);
         // this->scene()->views()[0]->viewport()->setCursor(Qt::IBeamCursor);
-        this->is_hovering = true;
+        // this->is_hovering = true;
         this->scene()->update();
         // qDebug() << "edit_area" << this->toPlainText();
         break;
@@ -132,6 +180,9 @@ void TextBox::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
         //     this->scene()->update();
         // qDebug() << "other area" << this->toPlainText();
         // }
+        // notice: even when the cursor is not in the boundingRect, it may still belongs to TextBox
+        // for about 1-2 pixels
+        this->setCursor(Qt::IBeamCursor);
         break;
     }
     // emit hovering_textbox(true);
@@ -197,9 +248,19 @@ void TextBox::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 
 void TextBox::keyPressEvent(QKeyEvent *event)
 {
-    // correct_center();
+
     this->scene()->update();
+    if (event->key() == Qt::Key_Shift){
+        grade_rotation = true;
+    }
     QGraphicsTextItem::keyPressEvent(event);
+}
+
+void TextBox::keyReleaseEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Shift){
+        grade_rotation = false;
+    }
 }
 
 void TextBox::del_this()
@@ -211,11 +272,6 @@ void TextBox::del_this()
 QRectF TextBox::edit_area()
 {
     return QRectF(4, 4, this->boundingRect().width() - 8, this->boundingRect().height() - 8);
-}
-
-QRectF TextBox::rotate_area()
-{
-    return QRectF(this->boundingRect().center().x() - 4, this->boundingRect().top() - 10, 8, 8);
 }
 
 void TextBox::correct_center(QPointF center)
@@ -235,9 +291,7 @@ void TextBox::correct_center(QPointF center)
 
 TextBox::control_area TextBox::detect_area(QPointF pos)
 {
-    if (rotate_area().contains(pos)){
-        return ROTATE;
-    }else if (this->boundingRect().contains(pos) && !edit_area().contains(pos)){
+    if (this->boundingRect().contains(pos) && !edit_area().contains(pos)){
         return MOVE;
         // qDebug() << "move area" << this->toPlainText();
     }else if (edit_area().contains(pos)){
@@ -316,60 +370,30 @@ void TextBox::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
     }
 }
 
-void TextBox::mousePressEvent(QGraphicsSceneMouseEvent* event)
-{
-    // this->setPos(event->pos());
-    // event->ignore();
-    switch (current_control) {
-    case ROTATE:
-        correct_center(this->boundingRect().center());
-        rotate_angle = this->rotation();
-        rotate_start_pos = event->scenePos();
-        this->update();
-        this->scene()->update();
-        break;
-    case RESIZE:
-        break;
-    case EDIT:
-        break;
-    case MOVE:
-        break;
-    case NONE:
-        this->is_selected = false;
-        break;
-        // this->setFocus();
-    }
-    if (current_control != RESIZE){
-        QGraphicsTextItem::mousePressEvent(event);
-    }
-    // qDebug() << "mouse pressed123";
-    // qDebug() << event->pos();
-}
+// void TextBox::mousePressEvent(QGraphicsSceneMouseEvent* event)
+// {
+//     // this->setPos(event->pos());
+//     // event->ignore();
+//     // switch (current_control) {
+//     // case EDIT:
+//     //     break;
+//     // case MOVE:
+//     //     break;
+//     // case NONE:
+//     //     break;
+//     //     // this->setFocus();
+//     // }
+//     QGraphicsTextItem::mousePressEvent(event);
+
+//     // qDebug() << "mouse pressed123";
+//     // qDebug() << event->pos();
+// }
 
 void TextBox::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     // this->update();
     // this->scene()->update();
     switch (current_control) {
-    case ROTATE:{
-        rotate_new_pos = event->scenePos();
-        QPointF center_pos = this->mapToScene(this->boundingRect().center());
-        QLineF line1(center_pos, rotate_start_pos);
-        QLineF line2(center_pos, rotate_new_pos);
-        double add_angle = line2.angleTo(line1);
-        this->setRotation(rotate_angle + add_angle);
-        rotate_angle  = this->rotation();
-        rotate_start_pos = rotate_new_pos;
-        break;
-    }
-    case RESIZE:{
-
-        // QFont newFont = this->font();
-        // newFont.setPointSizeF(qRound(resize_initial_text_size * scale * 10) / 10.0);
-        // this->setFont(newFont);
-        // qDebug() << scale << newFont.pointSizeF();
-        break;
-    }
     case NONE:
     case EDIT:
     case MOVE:
@@ -380,21 +404,7 @@ void TextBox::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
     this->scene()->update();
 }
 
-void TextBox::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
-{
-    switch (current_control) {
-    case RESIZE:{
-        // double size = emit get_font_size();
-        // QFont new_font = this->font();
-        // new_font.setPointSizeF(size / 2.0);
-        // this->setFont(new_font);
-        // this->setScale(2);
-        this->update();
-        this->scene()->update();
-        break;
-    }
-    default:
-        break;
-    }
-    QGraphicsTextItem::mouseReleaseEvent(event);
-}
+// void TextBox::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+// {
+//     QGraphicsTextItem::mouseReleaseEvent(event);
+// }

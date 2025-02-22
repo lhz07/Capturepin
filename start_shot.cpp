@@ -18,6 +18,10 @@ Start_shot::Start_shot(QWidget *parent)
 
     // this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
     // setAttribute(Qt::WA_TranslucentBackground);
+    this->setWindowTitle("Start_shot");
+    shot_socket = new HyprSocket(this);
+    socket = new QLocalSocket(this);
+    QAbstractSocket::connect(socket, &QLocalSocket::readyRead, this, &Start_shot::receive_socket);
     pin_pic = new QShortcut(QKeySequence("F3"), this);
     up = new QShortcut(QKeySequence("W"), this);
     copy_pic = new QShortcut(QKeySequence("Ctrl+C"), this);
@@ -26,14 +30,52 @@ Start_shot::Start_shot(QWidget *parent)
     connect(copy_pic, &QShortcut::activated, this, &Start_shot::copy);
     connect(pin_pic, &QShortcut::activated, this, &Start_shot::pin_picture);
     connect(cancel, &QShortcut::activated, this, &QWidget::close);
+    QString run_dir = QProcessEnvironment::systemEnvironment().value("XDG_RUNTIME_DIR");
+    QString img_path = run_dir + "/capturepin";
     // a test of grim
-    // QProcess process;
-    // qDebug() << "grim shot start" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
-    // process.start("grim", QStringList() << "-o" << "DP-1" << "test.png");
+    const auto screens = QGuiApplication::screens();
+    QEventLoop loop;
+    int process_count = screens.length();
+    auto on_process_finished = [&process_count, &loop](){
+        process_count--;
+        // qDebug() << "1 grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+        if (!process_count){
+            loop.quit();
+        }
+    };
+    qDebug() << "grim shot start" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    for (int i = 0; i < screens.length(); i++){
+        auto process = new QProcess(this);
+        connect(process, &QProcess::finished, on_process_finished);
+        process->start("grim", QStringList() << "-o" << screens[i]->name() << "-t" << "ppm" << img_path + QString::number(i) + ".ppm");
+    }
+    loop.exec();
+    // process.start("grim", QStringList() << "-o" << "DP-1" << "-t" << "ppm" << img_path);
+    // process1.start("grim", QStringList() << "-o" << "eDP-1" << "test1.png");
     // process.waitForFinished();
-    // qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
-    Screenshot sc1;
-    sc1.newShot(res);
+    // process1.waitForFinished();
+    qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+
+    qDebug() << "get current monitor" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    QString output;
+    const auto gotSignal = [&output](QString response) {
+        output = response;
+    };
+    QMetaObject::Connection conn = QObject::connect(shot_socket, &HyprSocket::hypr_response, gotSignal);
+    shot_socket->sendCommand("j/activeworkspace");
+    qDebug() << "parse json" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    QJsonDocument json = QJsonDocument::fromJson(output.toUtf8());
+    qDebug() << json["monitor"].toString() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");;
+    res = new QPixmap(img_path + "0.ppm");
+    // res->setDevicePixelRatio(qApp->devicePixelRatio());
+    for (int i = 0; i < screens.length(); i++){
+        QFile imgFile(img_path + QString::number(i) + ".ppm");
+        imgFile.remove();
+    }
+    // org.freedesktop.portal.Screenshot
+    // Screenshot sc1;
+    // sc1.newShot(res);
+
     this->showFullScreen();
     label_pic = new QLabel(this);
     int width = res->width();
@@ -74,6 +116,25 @@ Start_shot::~Start_shot()
 void Start_shot::update_win()
 {
     // this->update();
+}
+
+void Start_shot::window_shown()
+{
+    QProcess process;
+    process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch focuswindow title:" + this->windowTitle() + "&& hyprctl dispatch movewindow mon:DP-1");
+}
+
+void Start_shot::receive_socket()
+{
+    QString event = socket->readAll();
+    QStringList events = event.split('\n');
+    for (QString &i : events) {
+        if (i.contains("openwindow") && i.endsWith(this->windowTitle())){
+            socket->disconnectFromServer();
+            qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz") << this->windowTitle() << "get show window!";
+            window_shown();
+        }
+    }
 }
 
 void Start_shot::paintEvent(QPaintEvent *event)
@@ -273,6 +334,14 @@ void Start_shot::mouseMoveEvent(QMouseEvent *event)
             this->setCursor(Qt::ArrowCursor);
         }
     }
+}
+
+void Start_shot::showEvent(QShowEvent *event)
+{
+    QString runtimeDir = qEnvironmentVariable("XDG_RUNTIME_DIR");
+    QString socketPath = QString("%1/hypr/%2/.socket2.sock")
+                             .arg(runtimeDir, qEnvironmentVariable("HYPRLAND_INSTANCE_SIGNATURE"));
+    socket->connectToServer(socketPath);
 }
 
 void Start_shot::mouseReleaseEvent(QMouseEvent *event)

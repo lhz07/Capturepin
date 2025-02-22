@@ -5,10 +5,11 @@
 #include <QOpenGLWidget>
 #include <QtWidgets>
 #include "pin.h"
+#include "hyprsocket.h"
 
-namespace Ui {
-class Start_shot;
-}
+// namespace Ui {
+// class Start_shot;
+// }
 
 class Start_shot : public QOpenGLWidget
 {
@@ -25,10 +26,11 @@ protected:
     void mouseReleaseEvent(QMouseEvent *) override;
     void paintEvent(QPaintEvent *event) override;
     void mouseMoveEvent(QMouseEvent *) override;
+    void showEvent(QShowEvent* event) override;
     void keyPressEvent(QKeyEvent *) override;
     void keyReleaseEvent(QKeyEvent *) override;
 private:
-    Ui::Start_shot *ui;
+    // Ui::Start_shot *ui;
     QLabel *label_pic;
     QShortcut *pin_pic;
     QPixmap *res;
@@ -40,6 +42,8 @@ private:
     QShortcut* copy_pic;
     QShortcut* up;
     QShortcut* cancel;
+    QLocalSocket* socket;
+    HyprSocket* shot_socket;
     void move_up();
     void copy();
     void auto_save(QPixmap pic);
@@ -51,6 +55,9 @@ private:
     bool up_move = false;
     void correct_where_to_start(QPoint &p_start, QPoint &p_end);
     void update_win();
+    void window_shown();
+private slots:
+    void receive_socket();
 signals:
     void start_process(QString window_title);
 };
