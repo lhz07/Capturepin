@@ -1,4 +1,5 @@
 #include "hyprsocket.h"
+#include <QThread>
 
 HyprSocket* HyprSocket::instance;
 
@@ -31,7 +32,6 @@ void HyprSocket::sendCommand(const QString &command) {
         can_send = false;
         if (socket->state() == QLocalSocket::ConnectedState) {
             socket->write(command.toUtf8());
-            // qDebug() << command;
             socket->flush();
             loop.exec();
 

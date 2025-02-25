@@ -1,7 +1,9 @@
 #include "graphclosebutton.h"
-#include <qcursor.h>
-#include <qgraphicssceneevent.h>
-#include <qpainter.h>
+#include <QCursor>
+#include <QPainter>
+#include <QGraphicsSceneEvent>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 
 GraphCloseButton::GraphCloseButton(QGraphicsItem *parent)
     : QGraphicsObject{parent}
@@ -10,10 +12,14 @@ GraphCloseButton::GraphCloseButton(QGraphicsItem *parent)
     this->setCursor(QCursor(Qt::PointingHandCursor));
     this->setScale(2);
     this->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+    this->setAcceptHoverEvents(true);
     renderer = new QSvgRenderer(QString(":/pic/resource/pic/close.svg"), this);
 }
 
-GraphCloseButton::~GraphCloseButton() {}
+GraphCloseButton::~GraphCloseButton()
+{
+    this->scene()->views().constFirst()->blockSignals(false);
+}
 
 void GraphCloseButton::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -34,3 +40,25 @@ void GraphCloseButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
         emit clicked();
     }
 }
+
+void GraphCloseButton::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    is_hovering = true;
+    this->scene()->views().constFirst()->blockSignals(true);
+}
+
+void GraphCloseButton::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    is_hovering = false;
+    this->scene()->views().constFirst()->blockSignals(false);
+}
+
+bool GraphCloseButton::hide()
+{
+    if (!is_hovering){
+        this->setVisible(false);
+        return true;
+    }
+    return false;
+}
+

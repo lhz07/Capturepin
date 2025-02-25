@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QLocalSocket>
-#include <qeventloop.h>
+#include <QEventLoop>
 
 class HyprSocket : public QObject
 {

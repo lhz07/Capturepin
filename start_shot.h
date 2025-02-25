@@ -3,7 +3,7 @@
 
 // #include <QMainWindow>
 #include <QOpenGLWidget>
-#include <QtWidgets>
+// #include <QtWidgets>
 #include "pin.h"
 #include "hyprsocket.h"
 
@@ -31,7 +31,7 @@ protected:
     void keyReleaseEvent(QKeyEvent *) override;
 private:
     // Ui::Start_shot *ui;
-    QLabel *label_pic;
+    // QLabel *label_pic;
     QShortcut *pin_pic;
     QPixmap *res;
     double pixel_ratio;
@@ -39,11 +39,16 @@ private:
     QPoint p_end;
     QPoint cursor_pos;
     QPoint rd;
+    QPoint pin_pic_pos;
     QShortcut* copy_pic;
     QShortcut* up;
     QShortcut* cancel;
     QLocalSocket* socket;
     HyprSocket* shot_socket;
+    QString current_monitor;
+    QString current_workspace_id;
+    QScreen* current_screen;
+    int show_count = 0;
     void move_up();
     void copy();
     void auto_save(QPixmap pic);
@@ -54,7 +59,6 @@ private:
     bool down_move = false;
     bool up_move = false;
     void correct_where_to_start(QPoint &p_start, QPoint &p_end);
-    void update_win();
     void window_shown();
 private slots:
     void receive_socket();

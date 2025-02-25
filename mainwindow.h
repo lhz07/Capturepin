@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include "start_shot.h"
 #include "reactcmd.h"
+#include <QSharedMemory>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -29,10 +30,16 @@ private slots:
     void pushButton_shot_clicked();
     void shot();
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
-    void checkBox_enableShortcut_checkStateChanged(int state);
+
     // void showMessage();
     void pushButton_browse_clicked();
-    void checkBox_autoSave_checkStateChanged(int state);
+
+    void checkBox_fullscreen_toggled(bool checked);
+
+    void checkBox_enableShortcut_toggled(bool checked);
+
+    void checkBox_autoSave_toggled(bool checked);
+
 private:
     Ui::MainWindow *ui;
     Start_shot* new_shot_1;
@@ -50,7 +57,7 @@ private:
     QShortcut* shotcut;
     ReactCmd* rc;
     QThread* handle_thread;
-    QSettings myset = QSettings("CapturePin", "Config");
+    QSettings myset;
 // signals:
 //     void start_process(QString window_title);
 };

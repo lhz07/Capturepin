@@ -1,6 +1,8 @@
 #include "graphrotatebutton.h"
-#include <qcursor.h>
-#include <qpainter.h>
+#include <QCursor>
+#include <QPainter>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 
 GraphRotateButton::GraphRotateButton(QGraphicsItem *parent)
     : QGraphicsObject{parent}
@@ -18,6 +20,7 @@ GraphRotateButton::GraphRotateButton(QGraphicsItem *parent)
     this->setCursor(QCursor(cursor));
     this->setScale(2);
     this->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+    this->setAcceptHoverEvents(true);
     renderer = new QSvgRenderer(QString(":/pic/resource/pic/rotate.svg"), this);
 }
 
@@ -41,4 +44,25 @@ void GraphRotateButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void GraphRotateButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     emit mouse_move(event);
+}
+
+void GraphRotateButton::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    is_hovering = true;
+    this->scene()->views().constFirst()->blockSignals(true);
+}
+
+void GraphRotateButton::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    is_hovering = false;
+    this->scene()->views().constFirst()->blockSignals(false);
+}
+
+bool GraphRotateButton::hide()
+{
+    if (!is_hovering){
+        this->setVisible(false);
+        return true;
+    }
+    return false;
 }

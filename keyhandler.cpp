@@ -1,5 +1,5 @@
 #include "keyhandler.h"
-#include <QtWidgets>
+// #include <QtWidgets>
 
 KeyHandler KeyHandler::instance;
 

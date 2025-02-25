@@ -1,7 +1,8 @@
 #include "mainwindow.h"
 
 #include <QApplication>
-#include <QtCore/QtPlugin>
+#include <QLoggingCategory>
+#include <QSystemSemaphore>
 
 int main(int argc, char *argv[])
 {
@@ -50,6 +51,8 @@ int main(int argc, char *argv[])
             }
             sharedMemory->unlock();
             sharedMemory->detach();
+            delete sharedMemory;
+            delete to;
             return 0;
         } else {
             return 0;
@@ -61,11 +64,15 @@ int main(int argc, char *argv[])
         memcpy(to, from, sizeof(int));
         sharedMemory->unlock();
         qDebug() << "create sharedMemory";
+        delete from;
     }
     // QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
     // qDebug() << QCoreApplication::testAttribute(Qt::AA_UseDesktopOpenGL);
     QApplication a(argc, argv);
     QApplication::setQuitOnLastWindowClosed(false);
+    QCoreApplication::setOrganizationName("CapturePin");
+    QCoreApplication::setOrganizationDomain("capturepin.com");
+    QCoreApplication::setApplicationName("Config");
     MainWindow w(sharedMemory);
     // w.show();
     //hah

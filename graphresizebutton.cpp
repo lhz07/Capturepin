@@ -1,7 +1,9 @@
 #include "graphresizebutton.h"
-#include <qcursor.h>
-#include <qgraphicssceneevent.h>
-#include <qpainter.h>
+#include <QCursor>
+#include <QPainter>
+#include <QGraphicsSceneEvent>
+#include <QGraphicsScene>
+#include <QGraphicsView>
 
 GraphResizeButton::GraphResizeButton(QGraphicsItem *parent)
     : QGraphicsObject{parent}
@@ -9,6 +11,7 @@ GraphResizeButton::GraphResizeButton(QGraphicsItem *parent)
     this->setCursor(QCursor(Qt::SizeFDiagCursor));
     this->setScale(2);
     this->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+    this->setAcceptHoverEvents(true);
 }
 
 void GraphResizeButton::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -31,10 +34,33 @@ QRectF GraphResizeButton::boundingRect() const
 
 void GraphResizeButton::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    emit mouse_press(event);
+    if (event->button() == Qt::LeftButton){
+        emit mouse_press(event);
+    }
 }
 
 void GraphResizeButton::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
     emit mouse_move(event);
+}
+
+void GraphResizeButton::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    is_hovering = true;
+    this->scene()->views().constFirst()->blockSignals(true);
+}
+
+void GraphResizeButton::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    is_hovering = false;
+    this->scene()->views().constFirst()->blockSignals(false);
+}
+
+bool GraphResizeButton::hide()
+{
+    if (!is_hovering){
+        this->setVisible(false);
+        return true;
+    }
+    return false;
 }

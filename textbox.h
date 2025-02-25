@@ -2,8 +2,8 @@
 #define TEXTBOX_H
 
 #include <QObject>
-#include <qaction.h>
-#include <qgraphicsitem.h>
+#include <QAction>
+#include <QGraphicsItem>
 // #include <QtWidgets>
 #include "graphclosebutton.h"
 #include "graphresizebutton.h"
@@ -21,12 +21,14 @@ public:
     void resize_button_move(QGraphicsSceneMouseEvent* event);
     void rotate_button_press(QGraphicsSceneMouseEvent* event);
     void rotate_button_move(QGraphicsSceneMouseEvent* event);
+    bool can_delete = false;
     // void resize_button_release(QGraphicsSceneMouseEvent *event);
 
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     // void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    // QVariant itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value) override;
     // void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
@@ -35,6 +37,8 @@ protected:
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
+    void focusInEvent(QFocusEvent* event) override;
+    void focusOutEvent(QFocusEvent* event) override;
 private:
 
     QVector<QPointF> handles;
@@ -54,17 +58,17 @@ private:
     double rotate_angle;
     QPointF resize_start_pos;
     QPointF resize_new_pos;
-    double resize_initial_text_size;
+    QRectF old_bound_rect;
 
     bool is_hovering = false;
     bool grade_rotation = false;
 
     void correct_center(QPointF center);
+    const int default_font_size;
 
 signals:
     // void select_textbox(QPointer<TextBox> textbox);
     void update_font_size(double size);
-    double get_font_size();
 };
 
 #endif // TEXTBOX_H

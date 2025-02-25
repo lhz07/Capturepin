@@ -23,8 +23,9 @@ void ColorGridWidget::paintEvent(QPaintEvent *) {
     // const int cellSize = 24;
     const int spacing = 2;
     int index = 0;
+    const auto color_list = m_colors;
     
-    for (const QColor &color : m_colors) {
+    for (const QColor &color : color_list) {
         int row = index / cols;
         int col = index % cols;
         QRect rect(col * (cellSize + spacing), row * (cellSize + spacing), cellSize,

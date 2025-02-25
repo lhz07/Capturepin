@@ -6,7 +6,12 @@
 // #include "textbox.h"
 #include <QLocalSocket>
 #include <QWidget>
-#include <QtWidgets>
+#include <QToolBar>
+#include <QPointer>
+#include <QSettings>
+#include <QShortcut>
+#include <QFontComboBox>
+// #include <QtWidgets>
 
 // namespace Ui {
 // class ToolBar;
@@ -27,7 +32,6 @@ public:
     QToolBar* toolbar;
     QPointer<QToolBar> text_adjust;
     void update_font_size(double size);
-    double get_font_size();
 
 protected:
     // bool event(QEvent *event) override;
@@ -40,13 +44,15 @@ private:
     QAction* complete;
     QAction* text_color;
     bool to_show_bar = false;
+    bool reshow_bar = false;
+    unsigned char current_tool;
+    const int default_font_size;
     void addText_button_clicked();
     QSettings myset = QSettings("CapturePin", "Config");
     void change_text_color();
     // QPointer<TextBox> selected_textbox = nullptr;
     QString window_title;
     QColor selected_color;
-    unsigned char current_tool;
     QGraphicsScene* scene;
     GraphView* view;
     void edit_done();
@@ -55,8 +61,6 @@ private:
     QComboBox* text_size;
     HyprSocket* toolbar_socket;
     QLocalSocket* socket;
-    bool reshow_bar = false;
-
     void change_text_size(const QString& size);
     void change_text_font(const QFont& font);
     void window_shown();

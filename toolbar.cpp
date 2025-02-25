@@ -3,14 +3,17 @@
 enum tools{NONE, TEXTTOOL, RECTANGLE};
 // #include "ui_toolbar.h"
 #include "colorgridwidget.h"
+#include "sharevar.h"
+#include <QColorDialog>
+#include <QProcess>
 
 ToolBar::ToolBar(QGraphicsScene *scene, QString window_title, QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), default_font_size(ShareVar::default_font_size)
 // , ui(new Ui::ToolBar)
 {
     // ui->setupUi(this);
     this->scene = scene;
-    this->view = static_cast<GraphView*>(scene->views()[0]);
+    this->view = static_cast<GraphView*>(scene->views().constFirst());
     this->window_title = window_title;
     socket = new QLocalSocket();
     connect(socket, &QLocalSocket::readyRead, this, &ToolBar::receive_socket);
@@ -18,7 +21,7 @@ ToolBar::ToolBar(QGraphicsScene *scene, QString window_title, QWidget *parent)
     addText = new QAction("T");
     complete = new QAction("done");
     addText->setCheckable(true);
-    qDebug() << this->window_title;
+    // qDebug() << this->window_title;
     toolbar = new QToolBar(this);
     toolbar->addAction(addText);
     toolbar->addSeparator();
@@ -39,7 +42,7 @@ ToolBar::ToolBar(QGraphicsScene *scene, QString window_title, QWidget *parent)
 ToolBar::~ToolBar()
 {
     // delete ui;
-    qDebug() << "close!";
+    qDebug() << "toolbar close!";
 }
 
 void ToolBar::addText_button_clicked()
@@ -58,8 +61,6 @@ void ToolBar::addText_button_clicked()
             text_adjust->addAction(text_color);
             text_font = new QFontComboBox(text_adjust);
             QFont font("Noto Sans Mono");
-            font.setStyleHint(QFont::Monospace);
-            font.setFamilies({"Noto Sans Mono", "Noto Color Emoji"});
             text_font->setCurrentFont(font);
             text_size = new QComboBox(text_adjust);
             text_size->setEditable(true);
@@ -74,7 +75,7 @@ void ToolBar::addText_button_clicked()
                 text_size_option.append(QString::number(i));
             }
             text_size->addItems(text_size_option);
-            text_size->setCurrentText("12");
+            text_size->setCurrentText(QString::number(default_font_size));
             text_adjust->addWidget(text_size);
             text_adjust->addWidget(text_font);
             connect(color_picker, &ColorGridWidget::colorSelected, this, &ToolBar::get_selected_color);
@@ -127,10 +128,8 @@ void ToolBar::change_text_size(const QString &size)
     if (scene->focusItem() != nullptr){
         switch (scene->focusItem()->type()) {
         case TextBox::Type:{
-            // auto item = static_cast<TextBox*>(scene->focusItem());
-            // QFont font = item->font();
-            // font.setPointSizeF(size.toDouble());
-            // item->setFont(font);
+            auto item = static_cast<TextBox*>(scene->focusItem());
+            item->setScale(size.toDouble() / default_font_size);
             break;
         }
         default:
@@ -143,11 +142,10 @@ void ToolBar::change_text_size(const QString &size)
 void ToolBar::change_text_font(const QFont &font)
 {
     if (scene->focusItem() != nullptr && scene->focusItem()->type() == TextBox::Type){
-        QFont temp_font = font;
-        temp_font.setFamilies({font.family(), "Noto Color Emoji"});
-        this->text_font->setCurrentFont(temp_font);
         auto item = static_cast<TextBox*>(scene->focusItem());
-        item->setFont(temp_font);
+        QFont new_font = item->font();
+        new_font.setFamilies({font.family(), "Noto Color Emoji"});
+        item->setFont(new_font);
         // qDebug() << "text font changed!";
     }
 }
@@ -189,12 +187,16 @@ void ToolBar::window_shown()
                 }
                 pos = pos.split(",")[0] + " " + QString::number(pos.split(",")[1].toInt() - 75);
                 QString temp_cmd = pos.replace(',', ' ') +  ",title:";
-                process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch movewindowpixel exact " + temp_cmd + this->windowTitle());
+                // process.startDetached("bash", QStringList() << "-c" << QString("hyprctl dispatch setfloating title:") + this->windowTitle());
+                // HyprSocket temp_socket;
+                // temp_socket.sendCommand("dispatch movewindowpixel exact " + temp_cmd + this->windowTitle());
+                process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch 'movewindowpixel exact " + temp_cmd + this->windowTitle() + "'");
                 process.startDetached("bash", QStringList() << "-c" << QString("hyprctl dispatch setprop title:") + this->windowTitle() + " norounding 1");
                 // toolbar_socket->sendCommand("dispatch movewindowpixel exact " +
                 //                             temp_cmd + this->windowTitle());
                 if (reshow_bar){
                     // toolbar_socket->sendCommand("dispatch focuswindow title:" + window_title);
+                    // this->setFocus();
                     reshow_bar = false;
                 }
                 // toolbar_socket->sendCommand(QString("dispatch setprop title:") + this->windowTitle() + " norounding 1");
@@ -240,8 +242,12 @@ void ToolBar::get_focus_item(QGraphicsItem *newFocusItem, QGraphicsItem *oldFocu
         case TextBox::Type:
         {
             auto item = static_cast<TextBox*>(newFocusItem);
-            text_font->setCurrentFont(item->font());
-            text_size->setCurrentText(QString::number(item->font().pointSizeF()));
+            QFont temp_font;
+            temp_font.setFamily(item->font().family());
+            const QSignalBlocker blocker(text_font);
+            const QSignalBlocker blocker1(text_size);
+            text_font->setCurrentFont(temp_font);
+            text_size->setCurrentText(QString::number(qRound(default_font_size * 10 * item->scale()) / 10.0));
             break;
         }
         default:
@@ -249,11 +255,19 @@ void ToolBar::get_focus_item(QGraphicsItem *newFocusItem, QGraphicsItem *oldFocu
         }
     }
     // set item stack order
-    if (newFocusItem){
+    // qDebug() << newFocusItem << oldFocusItem;
+    if (newFocusItem && newFocusItem != oldFocusItem){
         newFocusItem->setZValue(1);
         if (oldFocusItem){
             oldFocusItem->setZValue(0);
+            if (oldFocusItem->type() == TextBox::Type){
+                auto item = static_cast<TextBox*>(oldFocusItem);
+                if (item->can_delete){
+                    item->deleteLater();
+                }
+            }
         }
+
     }
 }
 
@@ -279,6 +293,7 @@ void ToolBar::screen_clicked(QMouseEvent *event)
     // qDebug() << "not_hovering";
     switch (current_tool) {
     case TEXTTOOL:{
+        // qDebug() << "add new textbox!";
         TextBox* text_box_1 = new TextBox();
         // connect(text_box_1, &TextBox::select_textbox, this, &GraphView::current_object);
         // text_box_1->setTextWidth(10);
@@ -287,22 +302,22 @@ void ToolBar::screen_clicked(QMouseEvent *event)
         // font.setStyleHint(QFont::Monospace);
         // font.setFamilies({"Noto Sans Mono", "Noto Color Emoji"});
         QFont font = text_font->currentFont();
-        font.setPointSizeF(text_size->currentText().toDouble());
+        font.setFamilies({font.family(), "Noto Color Emoji"});
+        font.setPointSize(default_font_size);
         text_box_1->setFont(font);
         if (selected_color.isValid()){
             text_box_1->setDefaultTextColor(selected_color);
         }
         text_box_1->setPos(event->scenePosition());
-        qDebug() << event->scenePosition();
-        qDebug() << text_box_1->scenePos();
-        text_box_1->setScale(2);
+        // qDebug() << event->scenePosition();
+        // qDebug() << text_box_1->scenePos();
+        text_box_1->setScale(text_size->currentText().toDouble() / default_font_size);
         text_box_1->setTransformOriginPoint(text_box_1->boundingRect().center());
         // qDebug() << "add_text";
         scene->addItem(text_box_1);
         // qDebug() << text_box_1->isVisible();
         // connect(text_box_1, &TextBox::select_textbox, this, &ToolBar::get_selected_textbox);
         connect(text_box_1, &TextBox::update_font_size, this, &ToolBar::update_font_size);
-        connect(text_box_1, &TextBox::get_font_size, this, &ToolBar::get_font_size);
         scene->update();
         break;
     }
@@ -313,12 +328,8 @@ void ToolBar::screen_clicked(QMouseEvent *event)
 
 void ToolBar::update_font_size(double size)
 {
-    this->text_size->setCurrentText(QString::number(size));
-}
-
-double ToolBar::get_font_size()
-{
-    return this->text_size->currentText().toDouble();
+    const QSignalBlocker blocker(text_size);
+    text_size->setCurrentText(QString::number(size));
 }
 
 void ToolBar::showEvent(QShowEvent *event)

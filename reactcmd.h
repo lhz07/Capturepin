@@ -1,6 +1,7 @@
 #ifndef REACTCMD_H
 #define REACTCMD_H
-#include <QtWidgets>
+// #include <QtWidgets>
+#include <QThread>
 class ReactCmd : public QThread
 {
     Q_OBJECT

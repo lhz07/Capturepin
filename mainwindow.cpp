@@ -3,7 +3,10 @@
 // #include "screenshot.h"
 #include "start_shot.h"
 #include "keyhandler.h"
-#include <QtWidgets>
+// #include <QtWidgets>
+#include <QDir>
+#include <QMenu>
+#include <QFileDialog>
 #include <unistd.h>
 #include <QWidget>
 #include "hyprsocket.h"
@@ -26,21 +29,22 @@ MainWindow::MainWindow(QSharedMemory* sharedMemory, QWidget *parent)
     // key_hdl->moveToThread(handle_thread);
     // handle_thread->start();
     myset.setValue("DE", desktopEnv);
-    if (!myset.contains("default_path")){
-        myset.setValue("default_path", QDir::homePath() + "/Pictures");
-    }
-    if (!myset.contains("enableAutoSave")){
-        myset.setValue("enableAutoSave", 0);
-    }
-    if (!myset.contains("enableShortcut")){
-        myset.setValue("enableShortcut", 1);
-    }
+    // myset.setValue("enableAutoSave", 0);
+    // if (!myset.contains("enableShortcut")){
+    //     myset.setValue("enableShortcut", 1);
+    // }
+    myset.setValue("enableShortcut", myset.value("enableShortcut", true).toBool());
+    myset.setValue("enableAutoSave", myset.value("enableAutoSave", false).toBool());
+    myset.setValue("default_path", myset.value("default_path", QDir::homePath() + "/Pictures").toString());
+    myset.setValue("fullscreen", myset.value("fullscreen", true).toBool());
     ui->checkBox_enableShortcut->setChecked(myset.value("enableShortcut").toBool());
     ui->checkBox_autoSave->setChecked(myset.value("enableAutoSave").toBool());
     ui->lineEdit_default_path->setText(myset.value("default_path").toString());
+    ui->checkBox_fullscreen->setChecked(myset.value("fullscreen").toBool());
     connect(ui->pushButton_shot, &QPushButton::clicked, this, &MainWindow::pushButton_shot_clicked);
-    connect(ui->checkBox_enableShortcut, &QCheckBox::checkStateChanged, this, &MainWindow::checkBox_enableShortcut_checkStateChanged);
-    connect(ui->checkBox_autoSave, &QCheckBox::checkStateChanged, this, &MainWindow::checkBox_autoSave_checkStateChanged);
+    connect(ui->checkBox_enableShortcut, &QCheckBox::toggled, this, &MainWindow::checkBox_enableShortcut_toggled);
+    connect(ui->checkBox_autoSave, &QCheckBox::toggled, this, &MainWindow::checkBox_autoSave_toggled);
+    connect(ui->checkBox_fullscreen, &QCheckBox::toggled, this, &MainWindow::checkBox_fullscreen_toggled);
     connect(ui->pushButton_browse, &QPushButton::clicked, this, &MainWindow::pushButton_browse_clicked);
     createActions();
     createTrayIcon();
@@ -58,7 +62,7 @@ MainWindow::MainWindow(QSharedMemory* sharedMemory, QWidget *parent)
     rc->start();
     connect(rc, &ReactCmd::memoryChanged, this, &MainWindow::receive_shot_signal);
     sharedMemory->attach();
-    qApp->installEventFilter(this);
+    // qApp->installEventFilter(this);
 }
 
 MainWindow::~MainWindow()
@@ -160,17 +164,6 @@ void MainWindow::createTrayIcon()
     trayIcon->setContextMenu(trayIconMenu);
 }
 
-
-void MainWindow::checkBox_enableShortcut_checkStateChanged(int state)
-{
-    if (state == Qt::Checked){
-        myset.setValue("enableShortcut", 1);
-    }else {
-        myset.setValue("enableShortcut", 0);
-    }
-}
-
-
 void MainWindow::pushButton_browse_clicked()
 {
     QFileDialog::Options options;
@@ -182,16 +175,26 @@ void MainWindow::pushButton_browse_clicked()
     if (!directory.isEmpty()){
         ui->lineEdit_default_path->setText(directory);
         myset.setValue("default_path", directory);
+        myset.sync();
     }
 }
 
-
-void MainWindow::checkBox_autoSave_checkStateChanged(int state)
+void MainWindow::checkBox_fullscreen_toggled(bool checked)
 {
-    if (state == Qt::Checked){
-        myset.setValue("enableAutoSave", 1);
-    }else {
-        myset.setValue("enableAutoSave", 0);
-    }
+    qDebug() << checked;
+    myset.setValue("fullscreen", checked);
+    myset.sync();
+}
+
+void MainWindow::checkBox_enableShortcut_toggled(bool checked)
+{
+    myset.setValue("enableShortcut", checked);
+    myset.sync();
+}
+
+void MainWindow::checkBox_autoSave_toggled(bool checked)
+{
+    myset.setValue("enableAutoSave", checked);
+    myset.sync();
 }
 

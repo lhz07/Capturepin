@@ -1,4 +1,6 @@
 #include "reactcmd.h"
+#include <QSystemSemaphore>
+#include <QDateTime>
 
 ReactCmd::ReactCmd() {}
 

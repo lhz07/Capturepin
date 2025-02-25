@@ -3,7 +3,8 @@
 
 #include "textbox.h"
 #include <QObject>
-#include <QtWidgets>
+// #include <QtWidgets>
+#include <QGraphicsView>
 class GraphView : public QGraphicsView
 {
     Q_OBJECT
@@ -19,7 +20,6 @@ protected:
 private:
     char current_tool;
     QList<TextBox*> textbox_list;
-    void current_object(QObject* object);
 
 signals:
     void mouse_clicked(QMouseEvent* event);

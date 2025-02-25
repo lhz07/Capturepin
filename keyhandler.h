@@ -2,7 +2,7 @@
 #define KEYHANDLER_H
 
 #include <QObject>
-#include <QtWidgets>
+// #include <QtWidgets>
 
 class KeyHandler : public QObject
 {

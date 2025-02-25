@@ -1,11 +1,18 @@
 #include "start_shot.h"
 // #include "ui_start_shot.h"
-#include "screenshot.h"
+// #include "screenshot.h"
 #include "pin.h"
 #include "keyhandler.h"
 // #include "hyprsocket.h"
-#include <QtWidgets>
+// #include <QtWidgets>
 #include <QWidget>
+#include <QDateTime>
+#include <QJsonDocument>
+#include <QFile>
+#include <QGuiApplication>
+#include <QScreen>
+#include <QMouseEvent>
+#include <QClipboard>
 
 int Start_shot::pin_count = 0;
 
@@ -30,32 +37,9 @@ Start_shot::Start_shot(QWidget *parent)
     connect(copy_pic, &QShortcut::activated, this, &Start_shot::copy);
     connect(pin_pic, &QShortcut::activated, this, &Start_shot::pin_picture);
     connect(cancel, &QShortcut::activated, this, &QWidget::close);
+    // use grim
     QString run_dir = QProcessEnvironment::systemEnvironment().value("XDG_RUNTIME_DIR");
-    QString img_path = run_dir + "/capturepin";
-    // a test of grim
-    const auto screens = QGuiApplication::screens();
-    QEventLoop loop;
-    int process_count = screens.length();
-    auto on_process_finished = [&process_count, &loop](){
-        process_count--;
-        // qDebug() << "1 grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
-        if (!process_count){
-            loop.quit();
-        }
-    };
-    qDebug() << "grim shot start" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
-    for (int i = 0; i < screens.length(); i++){
-        auto process = new QProcess(this);
-        connect(process, &QProcess::finished, on_process_finished);
-        process->start("grim", QStringList() << "-o" << screens[i]->name() << "-t" << "ppm" << img_path + QString::number(i) + ".ppm");
-    }
-    loop.exec();
-    // process.start("grim", QStringList() << "-o" << "DP-1" << "-t" << "ppm" << img_path);
-    // process1.start("grim", QStringList() << "-o" << "eDP-1" << "test1.png");
-    // process.waitForFinished();
-    // process1.waitForFinished();
-    qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
-
+    QString img_path = run_dir + "/capturepin.ppm";
     qDebug() << "get current monitor" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
     QString output;
     const auto gotSignal = [&output](QString response) {
@@ -63,33 +47,38 @@ Start_shot::Start_shot(QWidget *parent)
     };
     QMetaObject::Connection conn = QObject::connect(shot_socket, &HyprSocket::hypr_response, gotSignal);
     shot_socket->sendCommand("j/activeworkspace");
-    qDebug() << "parse json" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    QObject::disconnect(conn);
     QJsonDocument json = QJsonDocument::fromJson(output.toUtf8());
-    qDebug() << json["monitor"].toString() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");;
-    res = new QPixmap(img_path + "0.ppm");
-    // res->setDevicePixelRatio(qApp->devicePixelRatio());
-    for (int i = 0; i < screens.length(); i++){
-        QFile imgFile(img_path + QString::number(i) + ".ppm");
-        imgFile.remove();
-    }
+    current_monitor = json["monitor"].toString();
+    current_workspace_id = QString::number(json["id"].toDouble());
+    qDebug() << current_monitor << current_workspace_id;
+    qDebug() << "grim shot start" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    QProcess process;
+    process.start("grim", QStringList() << "-o" << current_monitor << "-t" << "ppm" << img_path);
+    process.waitForFinished();
+    qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    res = new QPixmap(img_path);
+    QFile imgFile(img_path);
+    imgFile.remove();
+
     // org.freedesktop.portal.Screenshot
     // Screenshot sc1;
     // sc1.newShot(res);
 
-    this->showFullScreen();
-    label_pic = new QLabel(this);
+
     int width = res->width();
-    // int height = res->height();
-    // res->scaled(width, height);
-    QScreen *screen = QGuiApplication::primaryScreen();
-    int screen_width = screen->size().width();
-    int screen_height = screen->size().height();
+    const auto screens = QGuiApplication::screens();
+    for (const auto &s : screens){
+        if (s->name() == current_monitor){
+            current_screen = s;
+            break;
+        }
+    }
+    int screen_width = current_screen->size().width();
+    int screen_height = current_screen->size().height();
     rd = QPoint(screen_width, screen_height);
     pixel_ratio = (double)width / screen_width;
     res->setDevicePixelRatio(pixel_ratio);
-    // QTimer* refreshTimer = new QTimer(this);
-    // connect(refreshTimer, &QTimer::timeout, this, &Start_shot::update_win);
-    // refreshTimer->start(16); // 每16ms更新一次，即60FPS
     // qDebug() << res->width();
     // qDebug() << screen->size().width();
     // qDebug() << pixel_ratio;
@@ -100,35 +89,36 @@ Start_shot::Start_shot(QWidget *parent)
     // label_pic->setPixmap(*res);
     this->setCursor(Qt::CrossCursor);
     this->setMouseTracking(true);
-    qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    // qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    this->resize(screen_width, screen_height);
+    this->show();
 }
 
 Start_shot::~Start_shot()
 {
     // delete ui;
-    delete label_pic;
+    // delete label_pic;
     delete pin_pic;
     delete res;
     delete copy_pic;
     delete cancel;
 }
 
-void Start_shot::update_win()
-{
-    // this->update();
-}
-
 void Start_shot::window_shown()
 {
-    QProcess process;
-    process.startDetached("bash", QStringList() << "-c" << "hyprctl dispatch focuswindow title:" + this->windowTitle() + "&& hyprctl dispatch movewindow mon:DP-1");
+    this->setScreen(current_screen);
+    // qDebug() << this->screen();
+    QSettings myset;
+    if (myset.value("fullscreen").toBool()){
+        shot_socket->sendCommand("dispatch fullscreen 0");
+    }
 }
 
 void Start_shot::receive_socket()
 {
     QString event = socket->readAll();
-    QStringList events = event.split('\n');
-    for (QString &i : events) {
+    const QStringList events = event.split('\n');
+    for (const QString &i : events) {
         if (i.contains("openwindow") && i.endsWith(this->windowTitle())){
             socket->disconnectFromServer();
             qDebug() << QDateTime::currentDateTime().toString("hh:mm:ss:zzz") << this->windowTitle() << "get show window!";
@@ -140,14 +130,14 @@ void Start_shot::receive_socket()
 void Start_shot::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
+    //用保存的全屏对象实例化背景
     painter.setBackground(QBrush(*res));
     painter.setBackgroundMode(Qt::OpaqueMode);
-    QRect rect(QPoint(0, 0), QGuiApplication::primaryScreen()->size());
+    QRect rect(QPoint(0, 0), current_screen->size());
     painter.eraseRect(rect);
-    QPixmap pix(QGuiApplication::primaryScreen()->size());
+    QPixmap pix(current_screen->size());
     //用灰色填充pix
     pix.fill((QColor(10, 10, 10, 140)));
-    //用保存的全屏对象实例化背景
     painter.drawPixmap(0,0,pix);//把灰色模糊绘制到背景图片上
     QPen pen;
     pen.setColor(QColor(44, 172, 224));
@@ -168,35 +158,19 @@ void Start_shot::pin_picture()
     // qDebug() << "pressed!";
     this->setCursor(Qt::ArrowCursor);
     close();
-    // 裁剪区域 (x, y, width, height)
-    QRect cropRect(p_start*pixel_ratio, p_end*pixel_ratio); // 从(50, 50)位置裁剪200x150的区域
-    // QRect cropRect(200, 200, 977, 897);
+    QRect cropRect(p_start*pixel_ratio, p_end*pixel_ratio);
     QPixmap croppedPix = res->copy(cropRect);
     auto_save(croppedPix);
-    // croppedPix.setDevicePixelRatio(pixel_ratio);
-    // int width = croppedPix.width();
-    // int height = croppedPix.height();
-    // croppedPix = croppedPix.scaled(width * 0.7, height * 0.7);
-    // croppedPix.setDevicePixelRatio(pixel_ratio);
-    pin1 = new Pin(croppedPix, p_start);
+    pin1 = new Pin(croppedPix, pin_pic_pos);
     pin1->setWindowFlags(Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint |Qt::Tool);
     pin1->setAttribute(Qt::WA_TranslucentBackground);
     pin1->setWindowTitle("PinnedScreenshot." + QString::number(++pin_count));
-    // QScreen *screen = QGuiApplication::primaryScreen();
-    // QList<QScreen *> screens = QGuiApplication::screens();
-    // for (int i = 0; i < screens.size(); ++i) {
-    //     qDebug() << "Screen" << i << ":" << screens[i]->size();
-    // }
-    // pin1->resize(977, 797);
     QSettings myset = QSettings("CapturePin", "Config");
     if (myset.value("DE") == "Hyprland")
     {
         emit start_process(pin1->windowTitle());
     }
-    // connect(pin1, &Pin::process_key, key_hdl, &KeyHandler::process_key);
     connect(pin1, &Pin::show_tool_bar, &KeyHandler::getInstance(), &KeyHandler::show_tool_bar);
-    // connect(pin1, &Pin::close_process, key_hdl, &KeyHandler::close_process);
-    // connect(&HyprSocket::getInstance(), &HyprSocket::hypr_response, pin1, &Pin::receive_response);
     connect(&KeyHandler::getInstance(), &KeyHandler::show_all, pin1, &Pin::show_all);
     connect(&KeyHandler::getInstance(), &KeyHandler::hide_all, pin1, &Pin::hide_all);
     pin1->setAttribute(Qt::WA_DeleteOnClose);
@@ -209,7 +183,7 @@ void Start_shot::mousePressEvent(QMouseEvent *event)
     {
         // qDebug() << "press";
         // qDebug() << event->globalPosition().toPoint();
-        QPoint temp = event->globalPosition().toPoint();
+        QPoint temp = event->pos();
         if (!draw_completed){
             p_start = temp;
         }else{
@@ -258,18 +232,13 @@ void Start_shot::mousePressEvent(QMouseEvent *event)
                 down_move = true;
             }
             this->update();
-            // else{
-            //     p_start = temp;
-            //     this->setCursor(Qt::CrossCursor);
-            //     draw_completed = false;
-            // }
         }
     }
 }
 
 void Start_shot::mouseMoveEvent(QMouseEvent *event)
 {
-    QPoint temp = event->globalPosition().toPoint();
+    QPoint temp = event->pos();
     if (event->buttons() & Qt::LeftButton)
     {
         if (!draw_completed){
@@ -351,6 +320,8 @@ void Start_shot::mouseReleaseEvent(QMouseEvent *event)
         // qDebug() << "release";
         // qDebug() << event->globalPosition().toPoint();
         correct_where_to_start(p_start, p_end);
+        pin_pic_pos = this->mapToGlobal(p_start);
+        // qDebug() << p_start << pin_pic_pos;
         draw_completed = true;
         this->setCursor(Qt::ArrowCursor);
     }else if (event->button() == Qt::LeftButton && (right_move || left_move || up_move || down_move)){
@@ -359,6 +330,11 @@ void Start_shot::mouseReleaseEvent(QMouseEvent *event)
         down_move = false;
         up_move = false;
         correct_where_to_start(p_start, p_end);
+        pin_pic_pos = this->mapToGlobal(p_start);
+        // qDebug() << p_start << pin_pic_pos;
+    }else{
+        pin_pic_pos = this->mapToGlobal(p_start);
+        // qDebug() << p_start << pin_pic_pos;
     }
 }
 
@@ -399,7 +375,7 @@ void Start_shot::copy()
 
 void Start_shot::auto_save(QPixmap pic)
 {
-    QSettings myset("CapturePin", "Config");
+    QSettings myset;
     if (myset.value("enableAutoSave").toBool()){
         QString name = QString("Capturepin_%1").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"));
         pic.save(myset.value("default_path").toString()+'/'+name+".png", "png");

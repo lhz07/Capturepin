@@ -9,6 +9,7 @@ class ShareVar : public QObject
 public:
     explicit ShareVar(QObject *parent = nullptr);
     static bool is_selected;
+    static const int default_font_size = 24;
 
 signals:
 };

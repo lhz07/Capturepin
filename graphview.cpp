@@ -1,4 +1,5 @@
 #include "graphview.h"
+#include <QMouseEvent>
 
 GraphView::GraphView(QGraphicsScene *scene, QWidget *parent)
     : QGraphicsView(scene, parent) {
@@ -10,7 +11,7 @@ GraphView::GraphView(QGraphicsScene *scene, QWidget *parent)
 void GraphView::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton){
-        QGraphicsItem* item = this->scene()->itemAt(event->pos(), this->transform());
+        QGraphicsItem* item = this->scene()->itemAt(event->scenePosition(), this->transform());
         if (!item){
             emit mouse_clicked(event);
         }
