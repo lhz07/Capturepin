@@ -40,6 +40,8 @@ private slots:
 
     void checkBox_autoSave_toggled(bool checked);
 
+    void on_pushButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     Start_shot* new_shot_1;

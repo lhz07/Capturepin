@@ -9,6 +9,7 @@
 #include <QFileDialog>
 #include <unistd.h>
 #include <QWidget>
+#include <QMessageBox>
 #include "hyprsocket.h"
 
 MainWindow::MainWindow(QSharedMemory* sharedMemory, QWidget *parent)
@@ -196,5 +197,11 @@ void MainWindow::checkBox_autoSave_toggled(bool checked)
 {
     myset.setValue("enableAutoSave", checked);
     myset.sync();
+}
+
+
+void MainWindow::on_pushButton_clicked()
+{
+    QMessageBox::aboutQt(this, "about");
 }
 

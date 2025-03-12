@@ -5,3 +5,4 @@ ShareVar::ShareVar(QObject *parent)
 {}
 
  bool ShareVar::is_selected = false;
+double ShareVar::device_pixel_ratio = 1;

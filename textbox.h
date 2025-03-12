@@ -22,11 +22,12 @@ public:
     void rotate_button_press(QGraphicsSceneMouseEvent* event);
     void rotate_button_move(QGraphicsSceneMouseEvent* event);
     bool can_delete = false;
+    bool is_hovering = false;
     // void resize_button_release(QGraphicsSceneMouseEvent *event);
 
 protected:
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-    // void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     // QVariant itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value) override;
     // void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
@@ -60,7 +61,6 @@ private:
     QPointF resize_new_pos;
     QRectF old_bound_rect;
 
-    bool is_hovering = false;
     bool grade_rotation = false;
 
     void correct_center(QPointF center);

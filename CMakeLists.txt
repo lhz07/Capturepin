@@ -42,6 +42,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         graphclosebutton.h graphclosebutton.cpp
         graphresizebutton.h graphresizebutton.cpp
         graphrotatebutton.h graphrotatebutton.cpp
+        lline.h lline.cpp
+        lcircle.h lcircle.cpp
+        pensizebutton.h pensizebutton.cpp
 
 
 

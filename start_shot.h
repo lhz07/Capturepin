@@ -29,6 +29,7 @@ protected:
     void showEvent(QShowEvent* event) override;
     void keyPressEvent(QKeyEvent *) override;
     void keyReleaseEvent(QKeyEvent *) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
 private:
     // Ui::Start_shot *ui;
     // QLabel *label_pic;
@@ -48,9 +49,11 @@ private:
     QString current_monitor;
     QString current_workspace_id;
     QScreen* current_screen;
+    QMenu* menu;
     int show_count = 0;
     void move_up();
     void copy();
+    void save_pic();
     void auto_save(QPixmap pic);
     bool draw_completed = false;
     bool start_move = false;

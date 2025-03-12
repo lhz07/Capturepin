@@ -23,12 +23,13 @@ Pin::Pin(QPixmap pic, QPoint p_start, QWidget *parent)
     QAbstractSocket::connect(socket, &QLocalSocket::readyRead, this, &Pin::receive_socket);
     scene = new QGraphicsScene(this);
     view = new GraphView(scene, this);
-    toolbar = new ToolBar(scene, "PinnedScreenshot." + QString::number(Start_shot::pin_count + 1));
+    toolbar = new ToolBar(scene, "PinnedScreenshot." + QString::number(Start_shot::pin_count + 1), this);
     toolbar->setWindowTitle("capturepinTool." + QString::number(Start_shot::pin_count + 1));
-    toolbar->resize(500, 65); //used 52
+    toolbar->resize(530, 65); //used 52
     connect(this, &Pin::show_tool_bar, toolbar, &ToolBar::show_toolbar);
     connect(this, &Pin::restore_toolbar, toolbar, &ToolBar::restore_toolbar);
     connect(toolbar, &ToolBar::toggle_toolbar_visible, this, &Pin::toggle_toolbar_visible);
+    connect(toolbar, &ToolBar::update_pic, this, &Pin::update_pic);
     this->pic = pic;
     this->p_start = p_start;
     mainLayout = new QVBoxLayout(this);
@@ -66,6 +67,7 @@ Pin::Pin(QPixmap pic, QPoint p_start, QWidget *parent)
 
     connect(view, &GraphView::mouse_clicked, toolbar, &ToolBar::screen_clicked);
     connect(toolbar, &ToolBar::view_visible, view, &GraphView::text_tool_visible);
+    connect(view, &GraphView::restore_pic, this, &Pin::restore_pic);
     // view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     // view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     view->setFrameShape(QFrame::NoFrame);
@@ -221,10 +223,10 @@ void Pin::mousePressEvent(QMouseEvent *event)
                     break;
                 }
             }
-            start_move = QPoint(pos.split(",")[0].toInt(), pos.split(",")[1].toInt());
+            auto start_move = QPoint(pos.split(",")[0].toInt(), pos.split(",")[1].toInt());
             pin_socket->sendCommand("cursorpos");
             QObject::disconnect(conn);
-            qDebug() << "pin press!";
+            // qDebug() << "pin press!";
             // qDebug() << view->rect() << view->isVisible();
             output.remove(" ");
             auto old_cursor_pos = QPoint(output.split(",")[0].toInt(), output.split(",")[1].toInt());
@@ -250,6 +252,7 @@ void Pin::mousePressEvent(QMouseEvent *event)
 void Pin::mouseMoveEvent(QMouseEvent *event)
 {
     QString output;
+    // qDebug() << "pin move";
     const auto gotSignal = [&output](QString response) {
         output = response;
     };
@@ -391,6 +394,21 @@ void Pin::show_all()
     }
 }
 
+const QPixmap &Pin::get_pic()
+{
+    return pic;
+}
+
+void Pin::update_pic(const QPixmap &new_pic)
+{
+    label_pic->setPixmap(new_pic);
+}
+
+void Pin::restore_pic()
+{
+    label_pic->setPixmap(pic);
+}
+
 void Pin::show_toolbar()
 {
     // bar->show();
@@ -400,7 +418,7 @@ void Pin::show_toolbar()
 
 void Pin::toggle_toolbar_visible()
 {
-    if (!show_bar){
+    if (!toolbar->isVisible()){
         // qDebug() << "showing!";
         show_toolbar();
         // show_bar = true;

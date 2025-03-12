@@ -7,6 +7,7 @@
 #include <qmenu.h>
 #include <qpainter.h>
 #include <qstyleoption.h>
+#include <QTimer>
 
 TextBox::TextBox(QGraphicsItem* parent)
     : QGraphicsTextItem(parent), default_font_size(ShareVar::default_font_size)
@@ -14,7 +15,7 @@ TextBox::TextBox(QGraphicsItem* parent)
     setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsFocusable);
     setTextInteractionFlags(Qt::TextEditorInteraction);
     this->setAcceptHoverEvents(true);
-    del_textbox = new QAction("Close textbox");
+    del_textbox = new QAction("Close textbox", this);
     context_menu = new QMenu();
     context_menu->addAction(del_textbox);
     connect(del_textbox, &QAction::triggered, this, &TextBox::del_this);
@@ -44,6 +45,7 @@ TextBox::~TextBox()
 {
     // qDebug() << this->toPlainText() << this << "textbox delete!";
     this->scene()->update();
+    context_menu->deleteLater();
 }
 
 void TextBox::close_button_clicked()
@@ -54,7 +56,7 @@ void TextBox::close_button_clicked()
 void TextBox::resize_button_press(QGraphicsSceneMouseEvent *event)
 {
     this->setFocus();
-    correct_center(this->boundingRect().topLeft());
+    correct_center(this->boundingRect().center());
     // resize_start_pos = this->mapFromItem(resize_button, event->pos());
     resize_start_pos = this->mapFromScene(event->scenePos());
     // qDebug() << resize_start_pos;
@@ -219,19 +221,22 @@ void TextBox::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 
 void TextBox::wheelEvent(QGraphicsSceneWheelEvent *event)
 {
+    correct_center(this->boundingRect().center());
     int temp = event->delta();
-    double scale_rate = temp / 16.0;
-    double font_size = this->font().pointSizeF() + scale_rate;
-    if (font_size <= 0.5){
-        font_size = 0.5;
+    double scale_rate = temp / 120.0;
+    double new_scale = scale_rate / default_font_size + this->scale();
+    double font_size = qRound(default_font_size * 10 * new_scale) / 10.0;
+    if (font_size <= 7){
+        new_scale = 7.0 / default_font_size;
+        font_size = qRound(default_font_size * 10 * new_scale) / 10.0;
     }else if (font_size > 500){
-        font_size = 500;
+        new_scale = 500.0 / default_font_size;
+        font_size = qRound(default_font_size * 10 * new_scale) / 10.0;
     }
-    QFont temp_font = QFont(this->font());
-    temp_font.setPointSizeF(font_size);
-    this->setFont(temp_font);
-    this->setTransformOriginPoint(this->boundingRect().center());
-    // this->scene()->update();
+    this->setScale(new_scale);
+    emit update_font_size(font_size);
+    // this->setTransformOriginPoint(this->boundingRect().center());
+    this->scene()->update();
     // qDebug() << this->font().pointSizeF();
 }
 
@@ -258,16 +263,22 @@ void TextBox::keyPressEvent(QKeyEvent *event)
     if (event->key() == Qt::Key_Shift){
         grade_rotation = true;
     }
+    // qDebug() << "key press";
     QGraphicsTextItem::keyPressEvent(event);
 }
 
 void TextBox::keyReleaseEvent(QKeyEvent *event)
 {
-    this->scene()->update();
     if (event->key() == Qt::Key_Shift){
         grade_rotation = false;
     }
     QGraphicsTextItem::keyReleaseEvent(event);
+    QTimer::singleShot(0, this, [this] (){
+        this->clearFocus();
+        this->setFocus();
+        this->scene()->update();
+        // qDebug() << "finished";
+    });
 }
 
 void TextBox::focusInEvent(QFocusEvent *event)
@@ -277,13 +288,13 @@ void TextBox::focusInEvent(QFocusEvent *event)
     rotate_button->setVisible(true);
     can_delete = false;
     // qDebug() << this << "can delete:" << can_delete;
-    // qDebug() << "focus in";
+    // qDebug() << "focus in" << this->toPlainText();
     QGraphicsTextItem::focusInEvent(event);
 }
 
 void TextBox::focusOutEvent(QFocusEvent *event)
 {
-    // qDebug() << "focus out";
+    // qDebug() << "focus out" << this->toPlainText();
     QGraphicsTextItem::focusOutEvent(event);
     if (close_button->hide() && resize_button->hide() && rotate_button->hide()){
         if (this->toPlainText().isEmpty()){
@@ -357,6 +368,16 @@ void TextBox::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
     // painter->setPen(Qt::black);
 
 
+    // QPainterPath path;
+    // path.addText(0, this->boundingRect().bottom(), font(), toPlainText());
+
+    // // 绘制描边
+    // QPen pen(Qt::black);
+    // pen.setWidth(1);
+    // painter->setPen(pen);
+    // painter->setBrush(Qt::NoBrush);
+    // painter->drawPath(path);
+
     // draw bound
     if (this->is_hovering || this->hasFocus()){
         QPen pen_bound;
@@ -392,10 +413,19 @@ void TextBox::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, Q
     }
 }
 
-// void TextBox::mousePressEvent(QGraphicsSceneMouseEvent* event)
-// {
-//     QGraphicsTextItem::mousePressEvent(event);
-// }
+void TextBox::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+    // qDebug() << "press";
+    QGraphicsTextItem::mousePressEvent(event);
+    if (event->button() == Qt::LeftButton){
+        QTimer::singleShot(0, this, [this] (){
+            this->clearFocus();
+            this->setFocus();
+            this->scene()->update();
+            // qDebug() << "finished";
+        });
+    }
+}
 
 void TextBox::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {

@@ -25,6 +25,10 @@ public:
     void hide_all();
     void show_all();
     ToolBar* toolbar;
+    const QPixmap& get_pic();
+public slots:
+    void update_pic(const QPixmap& new_pic);
+    void restore_pic();
 protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
@@ -47,14 +51,12 @@ private:
     QGraphicsScene* scene;
     GraphView* view;
     QPoint p_start;
-    QPoint start_move;
     QString window_title;
     QString pos;
     QPixmap pic;
     QProcess *process_mouse;
     QSize origin_size;
     QMenu* menu;
-    QToolBar* text_adjust;
     QAction* quickSaveAction;
     QAction* saveAction;
     QAction* copyAction;

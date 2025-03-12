@@ -3,6 +3,7 @@
 // #include "screenshot.h"
 #include "pin.h"
 #include "keyhandler.h"
+#include "sharevar.h"
 // #include "hyprsocket.h"
 // #include <QtWidgets>
 #include <QWidget>
@@ -13,6 +14,9 @@
 #include <QScreen>
 #include <QMouseEvent>
 #include <QClipboard>
+#include <QFileDialog>
+#include <QDialog>
+#include <QMenu>
 
 int Start_shot::pin_count = 0;
 
@@ -32,11 +36,17 @@ Start_shot::Start_shot(QWidget *parent)
     pin_pic = new QShortcut(QKeySequence("F3"), this);
     up = new QShortcut(QKeySequence("W"), this);
     copy_pic = new QShortcut(QKeySequence("Ctrl+C"), this);
+    auto save_pic = new QAction("Save", this);
+    save_pic->setShortcut(QKeySequence("Ctrl+S"));
     cancel = new QShortcut(QKeySequence("ESC"), this);
     connect(up, &QShortcut::activated, this, &Start_shot::move_up);
     connect(copy_pic, &QShortcut::activated, this, &Start_shot::copy);
     connect(pin_pic, &QShortcut::activated, this, &Start_shot::pin_picture);
     connect(cancel, &QShortcut::activated, this, &QWidget::close);
+    connect(save_pic, &QAction::triggered, this, &Start_shot::save_pic);
+    menu = new QMenu(this);
+    menu->addAction(save_pic);
+    this->addAction(save_pic);
     // use grim
     QString run_dir = QProcessEnvironment::systemEnvironment().value("XDG_RUNTIME_DIR");
     QString img_path = run_dir + "/capturepin.ppm";
@@ -57,9 +67,17 @@ Start_shot::Start_shot(QWidget *parent)
     process.start("grim", QStringList() << "-o" << current_monitor << "-t" << "ppm" << img_path);
     process.waitForFinished();
     qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
-    res = new QPixmap(img_path);
+    res = new QPixmap(img_path, "ppm");
     QFile imgFile(img_path);
     imgFile.remove();
+    qDebug() << "res loaded" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    // loading from file is faster than loading from standard output
+    // process.start("grim", QStringList() << "-o" << current_monitor << "-");
+    // process.waitForFinished();
+    // qDebug() << "grim shot finished" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
+    // res = new QPixmap();
+    // res->loadFromData(process.readAll());
+    // qDebug() << "res loaded" << QDateTime::currentDateTime().toString("hh:mm:ss:zzz");
 
     // org.freedesktop.portal.Screenshot
     // Screenshot sc1;
@@ -67,7 +85,7 @@ Start_shot::Start_shot(QWidget *parent)
 
 
     int width = res->width();
-    const auto screens = QGuiApplication::screens();
+    const auto &screens = QGuiApplication::screens();
     for (const auto &s : screens){
         if (s->name() == current_monitor){
             current_screen = s;
@@ -79,7 +97,8 @@ Start_shot::Start_shot(QWidget *parent)
     rd = QPoint(screen_width, screen_height);
     pixel_ratio = (double)width / screen_width;
     res->setDevicePixelRatio(pixel_ratio);
-    // qDebug() << res->width();
+    ShareVar::device_pixel_ratio = pixel_ratio;
+    // qDebug() << res->size();
     // qDebug() << screen->size().width();
     // qDebug() << pixel_ratio;
     // auto *quitBtn = new QPushButton("Quit", this);
@@ -373,6 +392,48 @@ void Start_shot::copy()
     }
 }
 
+void Start_shot::save_pic()
+{
+    if (!draw_completed){
+        return;
+    }
+    this->setCursor(Qt::ArrowCursor);
+    QRect cropRect(p_start*pixel_ratio, p_end*pixel_ratio);
+    QPixmap croppedPix = res->copy(cropRect);
+    auto_save(croppedPix);
+    QString name = QString("Capturepin_%1").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss"));
+    QFileDialog dialog(this, "Save Picture", QDir::homePath()+'/'+name, "PNG Files (*.png);;JPEG Files (*.jpeg)");
+    QString file_path;
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().empty()) {
+        return;
+    }
+    // get file path
+    file_path = dialog.selectedFiles().constFirst();
+    // get file extension
+    QString selectedFilter = dialog.selectedNameFilter();
+    // qDebug() << file_path << selectedFilter;
+    if (file_path.isEmpty()){
+        return;
+    }
+    QByteArray format;
+    if (selectedFilter == "PNG Files (*.png)"){
+        format = "png";
+        if (!file_path.endsWith(".png")) {
+            file_path += ".png";
+        }
+    }else if (selectedFilter == "JPEG Files (*.jpeg)"){
+        format = "jpeg";
+        if (!file_path.endsWith(".jpeg")) {
+            file_path += ".jpeg";
+        }
+    }else {
+        return;
+    }
+    croppedPix.save(file_path, format.constData());
+    close();
+}
+
 void Start_shot::auto_save(QPixmap pic)
 {
     QSettings myset;
@@ -406,6 +467,11 @@ void Start_shot::keyPressEvent(QKeyEvent *event)
 void Start_shot::keyReleaseEvent(QKeyEvent *event)
 {
     start_move = false;
+}
+
+void Start_shot::contextMenuEvent(QContextMenuEvent *event)
+{
+    menu->exec(event->pos());
 }
 
 

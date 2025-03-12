@@ -19,6 +19,7 @@ GraphCloseButton::GraphCloseButton(QGraphicsItem *parent)
 GraphCloseButton::~GraphCloseButton()
 {
     this->scene()->views().constFirst()->blockSignals(false);
+    // qDebug() << "close button deleted";
 }
 
 void GraphCloseButton::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
